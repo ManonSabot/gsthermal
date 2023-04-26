@@ -1,0 +1,185 @@
+#' Fit Weibull
+#' @description Fit Weibull parameters given values of P50 and P88
+#'
+#' @param P50 LWP at 50 PLC (-MPa)
+#' @param P88 LWP at 88 PLC (-MPa)
+#'
+#' @return A data frame containing the Weibull parameters b and c
+#' @export
+fit_Weibull = function(
+    P50 = 4.9,
+    P88 = 6.41
+)
+{
+  x1 = 0.50
+  x2 = 0.88
+
+  c = log(log(1. - x1) / log(1. - x2)) / (log(P50) - log(P88))
+  b = - P50 / ((- log(1 - x1)) ** (1. / c))
+
+  return(data.frame(b, c))
+}
+
+
+
+
+#' Solve for Pcrit
+#' @description Calculate the critical leaf water potential
+#'
+#' @param b Weibull scale parameter
+#' @param c Weibull shape parameter
+#' @param ratiocrit Percentage of maximum conductivity at which hydraulic damage
+#'     is considered irreversible
+#'
+#' @return The critical leaf water potential (-MPa)
+#' @export
+#'
+#' @examples
+#' Weibull = fit_Weibull()
+#' b = Weibull[1,1]
+#' c = Weibull[1,2]
+#'
+#' Pcrit = calc_Pcrit(b, c)
+#'
+#' # Change the critical ration
+#' Pcrit1 = calc_Pcrit(b, c, 0.025)
+calc_Pcrit = function(b = -2.5,
+                      c = 2,
+                      ratiocrit = 0.05)
+{
+  Pcrit = -b*(-log(ratiocrit))**(1/c)
+  return(Pcrit)
+}
+
+
+
+
+#' Leaf water potential vector
+#' @description Create vector of equally-spaced steps ranging from soil water
+#'     potential to the critical water potential
+#'
+#' @param Ps Soil water potential, -MPa
+#' @param Pcrit Critical leaf water potential, -MPa
+#' @param pts Number of steps
+#'
+#' @return A vector of equally-spaced leaf water potentials ranging from the
+#'    soil water potential to the critical water potential
+#' @export
+#'
+#' @examples
+#' # Calculate Pcrit based on Weibull curve
+#' Weibull = fit_Weibull()
+#' b = Weibull[1,1]
+#' c = Weibull[1,2]
+#' Pcrit = calc_Pcrit(b, c)
+#'
+#' # Create Ps to Pcrit vector
+#' P = Ps_to_Pcrit(Pcrit = Pcrit)
+Ps_to_Pcrit = function(Ps = 0, # -MPa
+                       Pcrit = 4, # -MPa
+                       pts = 500 # no. of steps
+                       )
+{seq(Ps, Pcrit, length.out = pts)}
+
+
+
+
+#' Vulnerability curve
+#' @description Calculate the vulnerability curve for a given soil and critical
+#'     water potential
+#'
+#' @param P Vector with water potentials, -MPa
+#' @param b Weibull scale parameter
+#' @param c Weibull shape parameter
+#'
+#' @return Vulnerability curve
+#' @export
+#'
+#' @examples
+#' # Calculate Pcrit based on Weibull curve
+#' Weibull = fit_Weibull()
+#' b = Weibull[1,1]
+#' c = Weibull[1,2]
+#' Pcrit = calc_Pcrit(b, c)
+#'
+#' # Create Ps to Pcrit vector
+#' P = Ps_to_Pcrit(Pcrit = Pcrit)
+#'
+#' # Fit vulnerability curve
+#' vulnerability_curve(P, b, c)
+vulnerability_curve = function(P,
+                               b = -2.5,
+                               c = 2)
+{
+  curve = (exp(-(-P/b) ** c))
+  return(curve)
+}
+
+
+
+
+#' Temperature dependence of conductivity
+#' @description Calculate whole plant conductivity as a function of air
+#'     temperature
+#'
+#' @param kmax_25 Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1
+#' @param T_air Air temperature, deg C
+#'
+#' @return Whole plant conductivity at Tair, mmol s-1 m-2 MPa-1
+#' @export
+calc_kmax = function(kmax_25 = 4,
+                     T_air = 25
+)
+{
+  T_airK = T_air+273.15
+  kmax = kmax_25 * (T_airK**7 / 298.15**7)
+  return(kmax)
+}
+
+
+
+
+#' Transpiration supply function
+#' @description Calculate transpiration as integral of a vulnerability curve
+#'
+#' @param P Vector with water potentials, -MPa
+#' @param kmax_25 Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1
+#' @param T_air Air temperature, deg C
+#' @param b Weibull scale parameter
+#' @param c Weibull shape parameter
+#'
+#' @return Transpiration, mmol s-1 m-2
+#' @export
+#'
+#' @examples
+#' # Calculate Pcrit based on Weibull curve
+#' Weibull = fit_Weibull()
+#' b = Weibull[1,1]
+#' c = Weibull[1,2]
+#' Pcrit = calc_Pcrit(b, c)
+#'
+#' # Create Ps to Pcrit vector
+#' P = Ps_to_Pcrit(Pcrit = Pcrit)
+#'
+#' # Create vector of transpiration supply stream
+#' trans = trans_from_vc(P = P, b = b, c = c)
+trans_from_vc = function(P,
+                         kmax_25 = 4,
+                         T_air = 25,
+                         b = -2.5,
+                         c = 2
+                         )
+{
+  VC = vulnerability_curve(P, b, c)
+  kmax = calc_kmax(kmax_25, T_air)
+
+  # Create lists of first n water potential and PLC values for all n from 1 to the number of points in P
+  P_list = sapply(1:length(P), function(n) P[1:n])
+  VC_list = sapply(1:length(VC), function(n) VC[1:n])
+
+  # Approximate integral as a trapezoidal sum
+  AUC = mapply(pracma::trapz, P_list, VC_list)
+
+  E = kmax*AUC
+  return(E)
+}
