@@ -1,6 +1,6 @@
 Package: gsthermal
 Type: Package
-Title: Optimizes Stomatal Conductance Based on Thermal and Hydraulic Costs
+Title: Optimization of Stomatal Conductance Based on Thermal and Hydraulic Costs
 Version: 0.1.0
 Author: Camille K. Sicangco
 Imports:
@@ -9,13 +9,19 @@ Imports:
 Suggests:
     knitr,
     rmarkdown,
-    tidyverse,
-    ggpubr
+    ggpubr,
+    ggplot2,
+    tidyr,
+    dplyr,
+    magrittr
 Maintainer: <c.sicangco@westernsydney.edu.au>
 Description: Implements a model of stomatal conductance that optimizes for the 
-    maximum difference between relative carbon gain and summed relative
+    maximum difference between normalized carbon gain and summed normalized
     hydraulic and thermal costs.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.3
+VignetteBuilder: knitr
+Depends: 
+    R (>= 2.10)
