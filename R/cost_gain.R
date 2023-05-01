@@ -56,10 +56,8 @@ hydraulic_cost = function(P,
 #' @param Patm Atmospheric pressure, kPa
 #' @param u Wind speed above the leaf boundary layer, m s-1
 #' @param leaf_width Leaf width, m
+#' @param Tcrit Leaf temperature at which F0(T) transitions from slow- to fast- rise, deg C
 #' @param T50 Leaf temperature midway between Tcrit and Tmax, deg C
-#' @param F0_max Maximum F0 (achieved at Tmax)
-#' @param F0_min Minimum (i.e. undamaged) F0
-#' @param r Scaling factor for F0-T curve
 #'
 #' @return Normalized thermal cost, unitless
 #' @export
@@ -83,11 +81,65 @@ thermal_cost = function(P,
                         Patm = 101.325,
                         u = 2,
                         leaf_width = 0.01,
+                        Tcrit = 50,
+                        T50  = 51
+                        )
+{
+  E = trans_from_vc(P, kmax_25, T_air, b, c)
+  T_leaf = calc_Tleaf(T_air, PPFD, RH, E, u, Patm, leaf_width)
+
+  r = 2 / (T50 - Tcrit)
+
+  cost = 1 / (1 + exp(-r * (T_leaf - T50)))
+  return(cost)
+}
+
+
+#' Thermal cost function, old version (use `thermal_cost` instead)
+#' @description Calculates the normalized thermal cost based on F0-T curve
+#'
+#' @param P Vector of equally spaced water potentials ranging from Ps to Pcrit, -MPa
+#' @param b Weibull scale parameter
+#' @param c Weibull shape parameter
+#' @param kmax_25 Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1
+#' @param T_air Air temperature, deg C
+#' @param PPFD Photosynthetic photon flux density, mu mol m-2 s-1
+#' @param RH Relative humidity, in \%
+#' @param Patm Atmospheric pressure, kPa
+#' @param u Wind speed above the leaf boundary layer, m s-1
+#' @param leaf_width Leaf width, m
+#' @param T50 Leaf temperature midway between Tcrit and Tmax, deg C
+#' @param F0_max Maximum F0 (achieved at Tmax)
+#' @param F0_min Minimum (i.e. undamaged) F0
+#' @param r Scaling factor for F0-T curve
+#'
+#' @return Normalized thermal cost, unitless
+#' @export
+#'
+#' @examples
+#' # Calculate leaf VPD along transpiration supply stream
+#' Weibull = fit_Weibull() # Fit Weibull parameters
+#' b = Weibull[1,1]
+#' c = Weibull[1,2]
+#' Pcrit = calc_Pcrit(b, c) # Calculate Pcrit based on Weibull curve
+#' P = Ps_to_Pcrit(Pcrit = Pcrit) # Create Ps to Pcrit vector
+#'
+#' thermal_cost(P, b, c)
+thermal_cost_v0 = function(P,
+                        b = -2.5,
+                        c = 2,
+                        kmax_25 = 4,
+                        T_air = 25,
+                        PPFD = 1000,
+                        RH = 90,
+                        Patm = 101.325,
+                        u = 2,
+                        leaf_width = 0.01,
                         T50  = 51,
                         F0_max = 1000,
                         F0_min = 500,
                         r = 4
-                        )
+)
 {
   E = trans_from_vc(P, kmax_25, T_air, b, c)
   T_leaf = calc_Tleaf(T_air, PPFD, RH, E, u, Patm, leaf_width)
@@ -97,9 +149,6 @@ thermal_cost = function(P,
   cost = (F0 - F0_min) / (F0_max - F0_min)
   return(cost)
 }
-
-
-
 
 
 #' Carbon gain

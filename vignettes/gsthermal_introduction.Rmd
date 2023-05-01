@@ -93,12 +93,12 @@ The parameters required are T~50~ (i.e. the temperature halfway between the crit
 
 ```{r thermal damage}
 T_leaf_for_F0vT = seq(30, 54, length.out = 400)
+Tcrit = 50
 T50 = 51
-F0_max = 1000
 F0_min = 500
-r = 2
+F0_max = 1000
 
-F0_for_F0vT = F0_func(T_leaf_for_F0vT, T50, F0_max, F0_min, r)
+F0_for_F0vT = F0_func(T_leaf_for_F0vT, Tcrit, T50, F0_max, F0_min)
 plot(T_leaf_for_F0vT, F0_for_F0vT, type = 'l',
      ylab = expression("F"[0]), xlab = "Temperature (\u00B0C)")
 ```
@@ -111,8 +111,7 @@ $$HC = \frac{k_{max} - k(\psi_{leaf})}{k_{max} - k_{crit}},$$ $$TC = \frac{F_{0}
 
 ```{r cost-gain}
 hydraulic_cst = hydraulic_cost(P = P, T_air = T_air, kmax_25 = kmax_25)
-thermal_cst = thermal_cost(P = P, T_air = T_air, RH = RH, T50 = T50, r = r, 
-                           kmax_25 = kmax_25)
+thermal_cst = thermal_cost(P = P, T_air = T_air, RH = RH, Tcrit = Tcrit, T50 = T50)
 carbon_gain = C_gain(P = P, T_air = T_air, RH = RH, kmax_25 = kmax_25)
 
 {plot(P, hydraulic_cst, type = 'l', col = 'blue', 

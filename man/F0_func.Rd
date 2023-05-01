@@ -4,18 +4,18 @@
 \alias{F0_func}
 \title{F0-T Curve}
 \usage{
-F0_func(T_leaf, T50 = 51, F0_max = 1000, F0_min = 500, r = 4)
+F0_func(T_leaf, Tcrit = 50, T50 = 51, F0_max = 1000, F0_min = 500)
 }
 \arguments{
 \item{T_leaf}{Leaf temperature, deg C}
+
+\item{Tcrit}{Leaf temperature at which F0(T) transitions from slow- to fast- rise, deg C}
 
 \item{T50}{Leaf temperature midway between Tcrit and Tmax, deg C}
 
 \item{F0_max}{Maximum F0 (achieved at Tmax)}
 
 \item{F0_min}{Minimum (i.e. undamaged) F0}
-
-\item{r}{Scaling factor}
 }
 \value{
 Minimum fluorescence (F0)
