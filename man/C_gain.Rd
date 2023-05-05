@@ -14,7 +14,10 @@ C_gain(
   Patm = 101.325,
   u = 2,
   leaf_width = 0.01,
-  RH = 60
+  RH = 60,
+  Ca = 420,
+  Jmax = 100,
+  Vcmax = 50
 )
 }
 \arguments{
@@ -38,6 +41,12 @@ C_gain(
 \item{leaf_width}{Leaf width, m}
 
 \item{RH}{Relative humidity, in \%}
+
+\item{Ca}{Atmospheric CO2 concentration (ppm)}
+
+\item{Jmax}{Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)}
+
+\item{Vcmax}{Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)}
 }
 \value{
 Normalized carbon gain

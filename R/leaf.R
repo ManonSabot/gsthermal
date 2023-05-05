@@ -153,8 +153,11 @@ calc_gw = function(
 #' @param u Wind speed above the leaf boundary layer, m s-1
 #' @param leaf_width Leaf width, m
 #' @param RH Relative humidity, in \%
+#' @param Ca Atmospheric CO2 concentration (ppm)
+#' @param Jmax Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)
+#' @param Vcmax Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)
 #'
-#' @return Photosynthetic rate
+#' @return Photosynthetic rate (mol m-2 s-1)
 #' @export
 #'
 #' @examples
@@ -177,14 +180,18 @@ calc_A = function(T_air = 25,
                   E,
                   u = 2,
                   leaf_width = 0.01,
-                  RH = 60
+                  RH = 60,
+                  Ca = 420,
+                  Jmax = 100,
+                  Vcmax = 50
 )
 {
   T_leaf = calc_Tleaf(T_air, PPFD, RH, E, u, Patm, leaf_width)
   D_leaf = calc_Dleaf(T_leaf, T_air, RH)
   g_w = calc_gw(E, D_leaf, Patm)
   Photosyn_out = mapply(plantecophys::Photosyn,
-                        VPD = D_leaf, Tleaf = T_leaf, GS = g_w, Rd0 = 0)
+                        VPD = D_leaf, Ca = Ca, PPFD = PPFD, Tleaf = T_leaf,
+                        Patm = Patm, GS = g_w, Rd0 = 0, Jmax = Jmax, Vcmax = Vcmax)
   A = as.numeric(Photosyn_out[2,])
   return(A)
 }

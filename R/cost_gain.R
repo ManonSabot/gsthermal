@@ -166,6 +166,9 @@ thermal_cost_v0 = function(P,
 #' @param u Wind speed above the leaf boundary layer, m s-1
 #' @param leaf_width Leaf width, m
 #' @param RH Relative humidity, in \%
+#' @param Ca Atmospheric CO2 concentration (ppm)
+#' @param Jmax Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)
+#' @param Vcmax Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)
 #'
 #' @return Normalized carbon gain
 #' @export
@@ -188,11 +191,14 @@ C_gain = function(P,
                   Patm = 101.325,
                   u = 2,
                   leaf_width = 0.01,
-                  RH = 60
+                  RH = 60,
+                  Ca = 420,
+                  Jmax = 100,
+                  Vcmax = 50
                   )
 {
   E = trans_from_vc(P, kmax_25, T_air, b, c)
-  A = calc_A(T_air, PPFD, Patm, E, u, leaf_width, RH)
+  A = calc_A(T_air, PPFD, Patm, E, u, leaf_width, RH, Ca, Jmax, Vcmax)
 
   Amax = max(A)
 
