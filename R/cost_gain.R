@@ -10,6 +10,8 @@
 #' @param T_air Air temperature, deg C
 #' @param ratiocrit Percentage of maximum conductivity at which hydraulic damage
 #'     is considered irreversible
+#' @param constant_kmax TRUE if the kmax does not vary with temperature for
+#'     simulations; else FALSE
 #'
 #' @return Hydraulic cost, unitless
 #' @export
@@ -29,10 +31,11 @@ hydraulic_cost = function(P,
                           c = 2,
                           kmax_25 = 4,
                           T_air = 25,
-                          ratiocrit = 0.05
+                          ratiocrit = 0.05,
+                          constant_kmax = FALSE
 )
 {
-  kmax = calc_kmax(kmax_25, T_air)
+  kmax = calc_kmax(kmax_25, T_air, constant_kmax)
   kcrit = ratiocrit*kmax
   k = kmax * vulnerability_curve(P, b, c)
   kmax_i = max(k)
@@ -54,6 +57,8 @@ hydraulic_cost = function(P,
 #' @param leaf_width Leaf width, m
 #' @param Tcrit Leaf temperature at which F0(T) transitions from slow- to fast- rise, deg C
 #' @param T50 Leaf temperature midway between Tcrit and Tmax, deg C
+#' @param constant_kmax TRUE if the kmax does not vary with temperature for
+#'     simulations; else FALSE
 #'
 #' @return Normalized thermal cost, unitless
 #' @export
@@ -78,10 +83,11 @@ thermal_cost = function(P,
                         u = 2,
                         leaf_width = 0.01,
                         Tcrit = 50,
-                        T50  = 51
+                        T50  = 51,
+                        constant_kmax = FALSE
                         )
 {
-  E = trans_from_vc(P, kmax_25, T_air, b, c)
+  E = trans_from_vc(P, kmax_25, T_air, b, c, constant_kmax)
   T_leaf = calc_Tleaf(T_air, PPFD, RH, E, u, Patm, leaf_width)
 
   r = 2 / (T50 - Tcrit)
@@ -108,6 +114,8 @@ thermal_cost = function(P,
 #' @param F0_max Maximum F0 (achieved at Tmax)
 #' @param F0_min Minimum (i.e. undamaged) F0
 #' @param r Scaling factor for F0-T curve
+#' @param constant_kmax TRUE if the kmax does not vary with temperature for
+#'     simulations; else FALSE
 #'
 #' @return Normalized thermal cost, unitless
 #' @export
@@ -134,10 +142,11 @@ thermal_cost_v0 = function(P,
                         T50  = 51,
                         F0_max = 1000,
                         F0_min = 500,
-                        r = 4
+                        r = 4,
+                        constant_kmax = FALSE
 )
 {
-  E = trans_from_vc(P, kmax_25, T_air, b, c)
+  E = trans_from_vc(P, kmax_25, T_air, b, c, constant_kmax)
   T_leaf = calc_Tleaf(T_air, PPFD, RH, E, u, Patm, leaf_width)
 
   F0 = F0_func(T_leaf, T50, F0_max, F0_min, r)
@@ -155,6 +164,8 @@ thermal_cost_v0 = function(P,
 #' @param Ca Atmospheric CO2 concentration (ppm)
 #' @param Jmax Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)
 #' @param Vcmax Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)
+#' @param constant_kmax TRUE if the kmax does not vary with temperature for
+#'     simulations; else FALSE
 #'
 #' @return Normalized carbon gain
 #' @export
@@ -180,10 +191,11 @@ C_gain = function(P,
                   RH = 60,
                   Ca = 420,
                   Jmax = 100,
-                  Vcmax = 50
+                  Vcmax = 50,
+                  constant_kmax = FALSE
                   )
 {
-  E = trans_from_vc(P, kmax_25, T_air, b, c)
+  E = trans_from_vc(P, kmax_25, T_air, b, c, constant_kmax)
   A = calc_A(T_air, PPFD, Patm, E, u, leaf_width, RH, Ca, Jmax, Vcmax)
 
   Amax = max(A)
@@ -228,12 +240,13 @@ calc_costgain = function(
     T50 = 51,
     Ca = 420,
     Jmax = 100,
-    Vcmax = 50
+    Vcmax = 50,
+    constant_kmax = FALSE
 )
 {
-  HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit)
-  TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50)
-  CG = C_gain(P, b, c, kmax_25, T_air, PPFD, Patm, u, leaf_width, RH, Ca, Jmax, Vcmax)
+  HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit, constant_kmax)
+  TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50, constant_kmax)
+  CG = C_gain(P, b, c, kmax_25, T_air, PPFD, Patm, u, leaf_width, RH, Ca, Jmax, Vcmax, constant_kmax)
 
   cost_gain = c(HC, TC, CG)
   ID = c(rep("HC", length(HC)),
@@ -279,12 +292,13 @@ gain_min_costs = function(
     T50 = 51,
     Ca = 420,
     Jmax = 100,
-    Vcmax = 50
+    Vcmax = 50,
+    constant_kmax = FALSE
     )
 {
-  HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit)
-  TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50)
-  CG = C_gain(P, b, c, kmax_25, T_air, PPFD, Patm, u, leaf_width, RH, Ca, Jmax, Vcmax)
+  HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit, constant_kmax)
+  TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50, constant_kmax)
+  CG = C_gain(P, b, c, kmax_25, T_air, PPFD, Patm, u, leaf_width, RH, Ca, Jmax, Vcmax, constant_kmax)
   CC = HC + TC
 
   CG_min_HC = CG - HC
@@ -335,11 +349,12 @@ combined_costs = function(
     T50 = 51,
     Ca = 420,
     Jmax = 100,
-    Vcmax = 50
+    Vcmax = 50,
+    constant_kmax = FALSE
   )
 {
-  HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit)
-  TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50)
+  HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit, constant_kmax)
+  TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50, constant_kmax)
 
   CC = HC + TC
 

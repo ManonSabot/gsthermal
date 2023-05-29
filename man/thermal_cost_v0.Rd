@@ -18,7 +18,8 @@ thermal_cost_v0(
   T50 = 51,
   F0_max = 1000,
   F0_min = 500,
-  r = 4
+  r = 4,
+  constant_kmax = FALSE
 )
 }
 \arguments{
@@ -49,6 +50,9 @@ thermal_cost_v0(
 \item{F0_min}{Minimum (i.e. undamaged) F0}
 
 \item{r}{Scaling factor for F0-T curve}
+
+\item{constant_kmax}{TRUE if the kmax does not vary with temperature for
+simulations; else FALSE}
 }
 \value{
 Normalized thermal cost, unitless

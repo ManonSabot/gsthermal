@@ -17,7 +17,8 @@ C_gain(
   RH = 60,
   Ca = 420,
   Jmax = 100,
-  Vcmax = 50
+  Vcmax = 50,
+  constant_kmax = FALSE
 )
 }
 \arguments{
@@ -47,6 +48,9 @@ C_gain(
 \item{Jmax}{Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)}
 
 \item{Vcmax}{Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)}
+
+\item{constant_kmax}{TRUE if the kmax does not vary with temperature for
+simulations; else FALSE}
 }
 \value{
 Normalized carbon gain

@@ -20,7 +20,8 @@ combined_costs(
   T50 = 51,
   Ca = 420,
   Jmax = 100,
-  Vcmax = 50
+  Vcmax = 50,
+  constant_kmax = FALSE
 )
 }
 \arguments{
@@ -57,6 +58,9 @@ is considered irreversible}
 \item{Jmax}{Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)}
 
 \item{Vcmax}{Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)}
+
+\item{constant_kmax}{TRUE if the kmax does not vary with temperature for
+simulations; else FALSE}
 }
 \value{
 A data frame with columns "P", "ID" and "cost", where "P" denotes
