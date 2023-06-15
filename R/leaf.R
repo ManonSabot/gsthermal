@@ -156,6 +156,12 @@ calc_gw = function(
 #' @param Ca Atmospheric CO2 concentration (ppm)
 #' @param Jmax Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)
 #' @param Vcmax Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)
+#' @param net TRUE if desired output is net photosynthesis; FALSE if desired output
+#'     is gross photosynthesis
+#' @param Rd0 Day respiration rate at reference temperature (TrefR). Must be a positive value.
+#' @param TrefR Reference temperature for Rd (deg C)
+#' @param netOrig TRUE if net photosynthesis is to be calculated within
+#'     plantecophys::Photosyn. FALSE if Anet is to be calculated as Agross - Rd.
 #'
 #' @return Photosynthetic rate (mol m-2 s-1)
 #' @export
@@ -183,16 +189,37 @@ calc_A = function(T_air = 25,
                   RH = 60,
                   Ca = 420,
                   Jmax = 100,
-                  Vcmax = 50
+                  Vcmax = 50,
+                  net = FALSE,
+                  Rd0 = 0.92,
+                  TrefR = 25,
+                  netOrig = TRUE
 )
 {
   T_leaf = calc_Tleaf(T_air, PPFD, RH, E, u, Patm, leaf_width)
   D_leaf = calc_Dleaf(T_leaf, T_air, RH)
   g_w = calc_gw(E, D_leaf, Patm)
+
+  if (net == FALSE){
   Photosyn_out = mapply(plantecophys::Photosyn,
                         VPD = D_leaf, Ca = Ca, PPFD = PPFD, Tleaf = T_leaf,
                         Patm = Patm, GS = g_w, Rd0 = 0, Jmax = Jmax, Vcmax = Vcmax)
   A = as.numeric(Photosyn_out[2,])
+   } else {
+    Rd = Rd0 * exp(0.1012 * (T_leaf - TrefR) - 0.0005 * (T_leaf**2 - TrefR**2))
+
+    if (isTRUE(netOrig)) {
+      Photosyn_out = mapply(plantecophys::Photosyn,
+                            VPD = D_leaf, Ca = Ca, PPFD = PPFD, Tleaf = T_leaf,
+                            Patm = Patm, GS = g_w, Rd = Rd, Jmax = Jmax, Vcmax = Vcmax)
+      A = as.numeric(Photosyn_out[2,])
+      } else {
+      Photosyn_out = mapply(plantecophys::Photosyn,
+                            VPD = D_leaf, Ca = Ca, PPFD = PPFD, Tleaf = T_leaf,
+                            Patm = Patm, GS = g_w, Rd0 = 0, Jmax = Jmax, Vcmax = Vcmax)
+      A = as.numeric(Photosyn_out[2,]) - Rd
+    }
+  }
   return(A)
 }
 
@@ -200,9 +227,9 @@ calc_A = function(T_air = 25,
 #'
 #' @param T_air Air temperature, deg C
 #' @param epsilon Leaf emissivity
-#' @noRd
+#' @export
 #' @return Radiative conductance, mol m-2 s-1
-#' @example
+#' @examples
 #' calc_gr(T_air = 30)
 calc_gr = function(
     T_air = 25,
@@ -227,7 +254,7 @@ calc_gr = function(
 #' @param Patm Atmospheric pressure, kPa
 #' @param leaf_width Leaf width, m
 #'
-#' @noRd
+#' @export
 #'
 #' @return Boundary layer conductance to forced convection, mol m-2 s-1
 calc_gHa = function(
@@ -257,4 +284,40 @@ calc_gHa = function(
   reynolds = u * d / nu  # unitless
   g_Ha = (0.664 * cmolar * DH * (reynolds ** 0.5) * (prandtl ** (1. / 3.))
           / d)
+}
+
+
+#' Daytime respiration rate
+#' @description Calculates the daytime respiration rate (Rd) with the Heskel et
+#'     al. 2016 global polynomial model.
+#'
+#' @inheritParams calc_Tleaf
+#' @param Rd0 Day respiration rate (mu mol m-2 s-1) at reference temperature
+#'     (TrefR). Must be a positive value.
+#' @param TrefR Reference temperature for Rd (deg C)
+#'
+#' @return Rd (mu mol m-2 s-1)
+#' @export
+#'
+#' @examples
+#' # Calculate daytime respiration for scalar value of E
+#' calc_Rd(E = 10)
+#'
+#'
+#' # Calculate leaf temperature along transpiration supply stream
+#' Weibull = fit_Weibull() # Fit Weibull parameters
+#' b = Weibull[1,1]
+#' c = Weibull[1,2]
+#' Pcrit = calc_Pcrit(b, c) # Calculate Pcrit based on Weibull curve
+#'
+#' P = Ps_to_Pcrit(Pcrit = Pcrit) # Create Ps to Pcrit vector
+#' E = trans_from_vc(P = P, b = b, c = c) # Create vector of transpiration supply stream
+#'
+#' Rd_vect = calc_Rd(E = E) # Get leaf temperatures
+calc_Rd = function(T_air = 25, PPFD = 1000, RH = 60, E, u = 2, Patm = 101.325,
+                   leaf_width = 0.01, Rd0 = 0.92, TrefR = 25)
+{
+  T_leaf = calc_Tleaf(T_air, PPFD, RH, E, u, Patm, leaf_width)
+  Rd = Rd0 * exp(0.1012 * (T_leaf - TrefR) - 5e-04 * (T_leaf^2 - TrefR^2))
+  return(Rd)
 }

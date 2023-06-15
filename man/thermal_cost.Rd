@@ -16,7 +16,8 @@ thermal_cost(
   u = 2,
   leaf_width = 0.01,
   Tcrit = 50,
-  T50 = 51
+  T50 = 51,
+  constant_kmax = FALSE
 )
 }
 \arguments{
@@ -44,6 +45,9 @@ thermal_cost(
 \item{Tcrit}{Leaf temperature at which F0(T) transitions from slow- to fast- rise, deg C}
 
 \item{T50}{Leaf temperature midway between Tcrit and Tmax, deg C}
+
+\item{constant_kmax}{TRUE if the kmax does not vary with temperature for
+simulations; else FALSE}
 }
 \value{
 Normalized thermal cost, unitless

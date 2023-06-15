@@ -4,7 +4,14 @@
 \alias{trans_from_vc}
 \title{Transpiration supply function}
 \usage{
-trans_from_vc(P, kmax_25 = 4, T_air = 25, b = -2.5, c = 2)
+trans_from_vc(
+  P,
+  kmax_25 = 4,
+  T_air = 25,
+  b = -2.5,
+  c = 2,
+  constant_kmax = FALSE
+)
 }
 \arguments{
 \item{P}{Vector with water potentials, -MPa}
@@ -16,6 +23,9 @@ trans_from_vc(P, kmax_25 = 4, T_air = 25, b = -2.5, c = 2)
 \item{b}{Weibull scale parameter}
 
 \item{c}{Weibull shape parameter}
+
+\item{constant_kmax}{TRUE if the kmax does not vary with temperature for
+simulations; else FALSE}
 }
 \value{
 Transpiration, mmol s-1 m-2

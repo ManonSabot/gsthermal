@@ -14,7 +14,11 @@ calc_A(
   RH = 60,
   Ca = 420,
   Jmax = 100,
-  Vcmax = 50
+  Vcmax = 50,
+  net = FALSE,
+  Rd0 = 0.92,
+  TrefR = 25,
+  netOrig = TRUE
 )
 }
 \arguments{
@@ -37,6 +41,16 @@ calc_A(
 \item{Jmax}{Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)}
 
 \item{Vcmax}{Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)}
+
+\item{net}{TRUE if desired output is net photosynthesis; FALSE if desired output
+is gross photosynthesis}
+
+\item{Rd0}{Day respiration rate at reference temperature (TrefR). Must be a positive value.}
+
+\item{TrefR}{Reference temperature for Rd (deg C)}
+
+\item{netOrig}{TRUE if net photosynthesis is to be calculated within
+plantecophys::Photosyn. FALSE if Anet is to be calculated as Agross - Rd.}
 }
 \value{
 Photosynthetic rate (mol m-2 s-1)

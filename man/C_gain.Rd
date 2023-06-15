@@ -8,6 +8,7 @@ C_gain(
   P,
   b = -2.5,
   c = 2,
+  Amax = NULL,
   kmax_25 = 4,
   T_air = 25,
   PPFD = 1000,
@@ -17,7 +18,12 @@ C_gain(
   RH = 60,
   Ca = 420,
   Jmax = 100,
-  Vcmax = 50
+  Vcmax = 50,
+  constant_kmax = FALSE,
+  net = FALSE,
+  Rd0 = 0.92,
+  TrefR = 25,
+  netOrig = TRUE
 )
 }
 \arguments{
@@ -27,6 +33,10 @@ C_gain(
 \item{b}{Weibull scale parameter}
 
 \item{c}{Weibull shape parameter}
+
+\item{Amax}{Maximum potential photosynthetic rate (A) that A values are normalized
+by to obtain the carbon gain. If NULL, this is the instantaneous maximum
+potential rate described by Sperry et al. (2016).}
 
 \item{kmax_25}{Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1}
 
@@ -47,6 +57,19 @@ C_gain(
 \item{Jmax}{Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)}
 
 \item{Vcmax}{Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)}
+
+\item{constant_kmax}{TRUE if the kmax does not vary with temperature for
+simulations; else FALSE}
+
+\item{net}{TRUE if desired output is net photosynthesis; FALSE if desired output
+is gross photosynthesis}
+
+\item{Rd0}{Day respiration rate at reference temperature (TrefR). Must be a positive value.}
+
+\item{TrefR}{Reference temperature for Rd (deg C)}
+
+\item{netOrig}{TRUE if net photosynthesis is to be calculated within
+plantecophys::Photosyn. FALSE if Anet is to be calculated as Agross - Rd.}
 }
 \value{
 Normalized carbon gain

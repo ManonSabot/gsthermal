@@ -4,7 +4,15 @@
 \alias{hydraulic_cost}
 \title{Hydraulic cost function}
 \usage{
-hydraulic_cost(P, b = -2.5, c = 2, kmax_25 = 4, T_air = 25, ratiocrit = 0.05)
+hydraulic_cost(
+  P,
+  b = -2.5,
+  c = 2,
+  kmax_25 = 4,
+  T_air = 25,
+  ratiocrit = 0.05,
+  constant_kmax = FALSE
+)
 }
 \arguments{
 \item{P}{Vector of equally spaced water potentials ranging from Ps to Pcrit,
@@ -20,6 +28,9 @@ hydraulic_cost(P, b = -2.5, c = 2, kmax_25 = 4, T_air = 25, ratiocrit = 0.05)
 
 \item{ratiocrit}{Percentage of maximum conductivity at which hydraulic damage
 is considered irreversible}
+
+\item{constant_kmax}{TRUE if the kmax does not vary with temperature for
+simulations; else FALSE}
 }
 \value{
 Hydraulic cost, unitless
@@ -29,7 +40,7 @@ Calculates the normalized hydraulic cost as described in Sperry
     et al. 2016
 }
 \examples{
-# Calculate leaf VPD along transpiration supply stream
+# Calculate leaf water potential along transpiration supply stream
 Weibull = fit_Weibull() # Fit Weibull parameters
 b = Weibull[1,1]
 c = Weibull[1,2]

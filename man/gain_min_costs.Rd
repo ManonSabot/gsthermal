@@ -8,6 +8,8 @@ gain_min_costs(
   P,
   b = -2.5,
   c = 2,
+  Amax_gross = NULL,
+  Amax_net = NULL,
   kmax_25 = 4,
   T_air = 25,
   ratiocrit = 0.05,
@@ -20,7 +22,10 @@ gain_min_costs(
   T50 = 51,
   Ca = 420,
   Jmax = 100,
-  Vcmax = 50
+  Vcmax = 50,
+  constant_kmax = FALSE,
+  Rd0 = 0.92,
+  TrefR = 25
 )
 }
 \arguments{
@@ -30,6 +35,14 @@ gain_min_costs(
 \item{b}{Weibull scale parameter}
 
 \item{c}{Weibull shape parameter}
+
+\item{Amax_gross}{Maximum potential gross photosynthetic rate (A) that A values are normalized
+by to obtain the carbon gain. If NULL, this is the instantaneous maximum
+potential rate described by Sperry et al. (2016).}
+
+\item{Amax_net}{Maximum potential net photosynthetic rate (A) that A values are normalized
+by to obtain the carbon gain. If NULL, this is the instantaneous maximum
+potential rate described by Sperry et al. (2016).}
 
 \item{kmax_25}{Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1}
 
@@ -57,6 +70,13 @@ is considered irreversible}
 \item{Jmax}{Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)}
 
 \item{Vcmax}{Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)}
+
+\item{constant_kmax}{TRUE if the kmax does not vary with temperature for
+simulations; else FALSE}
+
+\item{Rd0}{Day respiration rate at reference temperature (TrefR). Must be a positive value.}
+
+\item{TrefR}{Reference temperature for Rd (deg C)}
 }
 \value{
 A data frame with columns "P", "ID" and "CG_min_C", where "P" denotes

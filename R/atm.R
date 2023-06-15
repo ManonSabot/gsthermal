@@ -57,7 +57,7 @@ calc_Rnet = function(T_air = 25,
 #'
 #' @param T Temperature, deg C
 #' @return Saturation vapor pressure, kPa
-#' @noRd
+#' @export
 vpsat = function(
     T = 25
 )
