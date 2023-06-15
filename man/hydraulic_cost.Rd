@@ -40,7 +40,7 @@ Calculates the normalized hydraulic cost as described in Sperry
     et al. 2016
 }
 \examples{
-# Calculate leaf VPD along transpiration supply stream
+# Calculate leaf water potential along transpiration supply stream
 Weibull = fit_Weibull() # Fit Weibull parameters
 b = Weibull[1,1]
 c = Weibull[1,2]

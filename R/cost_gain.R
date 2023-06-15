@@ -17,7 +17,7 @@
 #' @export
 #'
 #' @examples
-#' # Calculate leaf VPD along transpiration supply stream
+#' # Calculate leaf water potential along transpiration supply stream
 #' Weibull = fit_Weibull() # Fit Weibull parameters
 #' b = Weibull[1,1]
 #' c = Weibull[1,2]
@@ -44,7 +44,53 @@ hydraulic_cost = function(P,
 }
 
 
+#' Respiratory cost function
+#' @description Calculates the normalized respiratory cost along the
+#'     transpiration supply stream.
+#'
+#' @inheritParams calc_Rd
+#' @inheritParams C_gain
+#'
+#' @return Respiratory cost, unitless
+#' @export
+#'
+#' @examples
+#' # Calculate leaf water potential along transpiration supply stream
+#' Weibull = fit_Weibull() # Fit Weibull parameters
+#' b = Weibull[1,1]
+#' c = Weibull[1,2]
+#' Pcrit = calc_Pcrit(b, c) # Calculate Pcrit based on Weibull curve
+#' P = Ps_to_Pcrit(Pcrit = Pcrit) # Create Ps to Pcrit vector
+#'
+#' # Calculate respiratory cost
+#' respiratory_cost(P, b, c)
+respiratory_cost = function(P,
+                            b = -2.5,
+                            c = 2,
+                            Amax = NULL,
+                            kmax_25 = 4,
+                            T_air = 25,
+                            PPFD = 1000,
+                            Patm = 101.325,
+                            u = 2,
+                            leaf_width = 0.01,
+                            RH = 60,
+                            constant_kmax = FALSE,
+                            Rd0 = 0.92,
+                            TrefR = 25)
+{
+  E = trans_from_vc(P, kmax_25, T_air, b, c, constant_kmax)
+  Rd = calc_Rd(T_air, PPFD, RH, E, u, Patm, leaf_width, Rd0, TrefR)
+  Rd_min = min(Rd)
 
+  if (is.null(Amax)) {
+    Rd_max = max(Rd)
+    cost = (Rd - Rd_min) / (Rd_max - Rd_min)
+  } else {
+    cost = (Rd - Rd_min) / (Amax - Rd_min)
+  }
+  return(cost)
+}
 
 #' Thermal cost function
 #' @description Calculates the normalized thermal cost based on F0-T curve
@@ -155,17 +201,76 @@ thermal_cost_v0 = function(P,
   return(cost)
 }
 
+#' Maximum potential photosynthetic rate
+#' @description Calculates the maximum potential photosynthetic rate for the given
+#'     hydraulic parameters and range of water potentials.
+#'
+#' @inheritParams C_gain
+#' @param Tair_range Range of air temperatures considered for determination of
+#'     Amax (deg C)
+#'
+#' @return Maximum potential photosynthetic rate used to normalize the carbon
+#'     gain function and the temperature at which it occurs.
+#' @export
+#'
+#' @examples
+#' Weibull = fit_Weibull() # Fit Weibull parameters
+#' b = Weibull[1,1]
+#' c = Weibull[1,2]
+#' Pcrit = calc_Pcrit(b, c) # Calculate Pcrit based on Weibull curve
+#' P = Ps_to_Pcrit(Pcrit = Pcrit) # Create Ps to Pcrit vector
+#'
+#' Amax_overT(P, b, c, constant_kmax = TRUE)
+Amax_overT = function(P,
+                      b = -2.5,
+                      c = 2,
+                      kmax_25 = 4,
+                      PPFD = 1000,
+                      Patm = 101.325,
+                      u = 2,
+                      leaf_width = 0.01,
+                      RH = 60,
+                      Ca = 420,
+                      Jmax = 100,
+                      Vcmax = 50,
+                      Tair_range= seq(20, 50, by = 0.5),
+                      constant_kmax = FALSE,
+                      net = FALSE,
+                      Rd0 = 0.92,
+                      TrefR = 25,
+                      netOrig = TRUE
+                      )
+{
+  # Calculate the maximum transpiration rate given the vulnerability curve parameters
+  # for the specified temperature range
+  VC = vulnerability_curve(P, b, c)
+  AUC = pracma::trapz(P, vulnerability_curve(P, b, c))
+  kmax = calc_kmax(kmax_25, Tair_range, constant_kmax)
+  E = kmax * AUC
+
+  # Calculate A over the temperature range
+  calc_A_vect = Vectorize(calc_A, c("T_air", "E"))
+  A = calc_A_vect(Tair_range, PPFD, Patm, E, u, leaf_width, RH, Ca, Jmax,
+                  Vcmax, net, Rd0, TrefR, netOrig)
+
+  # Select the maximum photosynthetic rate and corresponding temperature
+  i = ifelse(all(A <= 0), which.max(abs(A)), which.max(A))
+  #i = which.max(A)
+  Amax = A[i]
+  Tair_opt = Tair_range[i]
+  return(data.frame(Tair_opt, Amax))
+}
 
 #' Carbon gain
 #' @description Calculates the normalized carbon gain as described in Sperry et
 #'     al. 2016
 #'
 #' @inheritParams thermal_cost
-#' @param Ca Atmospheric CO2 concentration (ppm)
-#' @param Jmax Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)
-#' @param Vcmax Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)
-#' @param constant_kmax TRUE if the kmax does not vary with temperature for
-#'     simulations; else FALSE
+#' @inheritParams calc_A
+#' @param Amax Maximum potential photosynthetic rate (A) that A values are normalized
+#'     by to obtain the carbon gain. If NULL, this is the instantaneous maximum
+#'     potential rate described by Sperry et al. (2016).
+
 #'
 #' @return Normalized carbon gain
 #' @export
@@ -182,6 +287,7 @@ thermal_cost_v0 = function(P,
 C_gain = function(P,
                   b = -2.5,
                   c = 2,
+                  Amax = NULL,
                   kmax_25 = 4,
                   T_air = 25,
                   PPFD = 1000,
@@ -192,13 +298,27 @@ C_gain = function(P,
                   Ca = 420,
                   Jmax = 100,
                   Vcmax = 50,
-                  constant_kmax = FALSE
+                  constant_kmax = FALSE,
+                  net = FALSE,
+                  Rd0 = 0.92,
+                  TrefR = 25,
+                  netOrig = TRUE
                   )
 {
+  # Calculate the photosynthesis over the transpiration supply stream
   E = trans_from_vc(P, kmax_25, T_air, b, c, constant_kmax)
-  A = calc_A(T_air, PPFD, Patm, E, u, leaf_width, RH, Ca, Jmax, Vcmax)
+  A = calc_A(T_air, PPFD, Patm, E, u, leaf_width, RH, Ca, Jmax, Vcmax, net, Rd0,
+             TrefR, netOrig)
 
-  Amax = max(A)
+  # Calculate Amax if not provided
+  #Amax = ifelse(is.null(Amax), abs(max(A)), Amax)
+  Amax = if (is.null(Amax) & !(all(A <= 0))){
+    max(A)
+  } else if (is.null(Amax) & (all(A <= 0))) {
+    max(abs(A))
+  } else {
+    Amax
+  }
 
   gain = A/Amax
   return(gain)
@@ -210,6 +330,12 @@ C_gain = function(P,
 #' @inheritParams hydraulic_cost
 #' @inheritParams thermal_cost
 #' @inheritParams C_gain
+#' @param Amax_net Maximum potential net photosynthetic rate (A) that A values are normalized
+#'     by to obtain the carbon gain. If NULL, this is the instantaneous maximum
+#'     potential rate described by Sperry et al. (2016).
+#' @param Amax_gross Maximum potential gross photosynthetic rate (A) that A values are normalized
+#'     by to obtain the carbon gain. If NULL, this is the instantaneous maximum
+#'     potential rate described by Sperry et al. (2016).
 #' @return A data frame with columns "P", "ID" and "cost_gain", where "P" denotes
 #'     the leaf water potential, "ID" is one of CG, HC, or TC, and "cost_gain" is the
 #'     corresponding value.
@@ -228,6 +354,8 @@ calc_costgain = function(
     P,
     b = -2.5,
     c = 2,
+    Amax_gross = NULL,
+    Amax_net = NULL,
     kmax_25 = 4,
     T_air = 25,
     ratiocrit = 0.05,
@@ -241,17 +369,23 @@ calc_costgain = function(
     Ca = 420,
     Jmax = 100,
     Vcmax = 50,
-    constant_kmax = FALSE
+    constant_kmax = FALSE,
+    Rd0 = 0.92,
+    TrefR = 25
 )
 {
   HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit, constant_kmax)
   TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50, constant_kmax)
-  CG = C_gain(P, b, c, kmax_25, T_air, PPFD, Patm, u, leaf_width, RH, Ca, Jmax, Vcmax, constant_kmax)
+  CG_net = C_gain(P, b, c, Amax_net, kmax_25, T_air, PPFD, Patm, u, leaf_width,
+              RH, Ca, Jmax, Vcmax, constant_kmax, net = TRUE, Rd0, TrefR)
+  CG_gross = C_gain(P, b, c, Amax_gross, kmax_25, T_air, PPFD, Patm, u, leaf_width,
+                    RH, Ca, Jmax, Vcmax, constant_kmax, net = FALSE, Rd0, TrefR)
 
-  cost_gain = c(HC, TC, CG)
+  cost_gain = c(HC, TC, CG_net, CG_gross)
   ID = c(rep("HC", length(HC)),
          rep("TC", length(TC)),
-         rep("CG", length(CG)))
+         rep("CG_net", length(CG_net)),
+         rep("CG_gross", length(CG_gross)))
   df = data.frame(P, ID, cost_gain)
   return(df)
 }
@@ -280,6 +414,8 @@ gain_min_costs = function(
     P,
     b = -2.5,
     c = 2,
+    Amax_gross = NULL,
+    Amax_net = NULL,
     kmax_25 = 4,
     T_air = 25,
     ratiocrit = 0.05,
@@ -293,22 +429,37 @@ gain_min_costs = function(
     Ca = 420,
     Jmax = 100,
     Vcmax = 50,
-    constant_kmax = FALSE
+    constant_kmax = FALSE,
+    Rd0 = 0.92,
+    TrefR = 25
     )
 {
   HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit, constant_kmax)
   TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50, constant_kmax)
-  CG = C_gain(P, b, c, kmax_25, T_air, PPFD, Patm, u, leaf_width, RH, Ca, Jmax, Vcmax, constant_kmax)
+  CG_net = C_gain(P, b, c, Amax_net, kmax_25, T_air, PPFD, Patm, u, leaf_width,
+              RH, Ca, Jmax, Vcmax, constant_kmax, net = TRUE, Rd0, TrefR)
+  CG_gross = C_gain(P, b, c, Amax_gross, kmax_25, T_air, PPFD, Patm, u, leaf_width,
+                  RH, Ca, Jmax, Vcmax, constant_kmax, net = FALSE, Rd0, TrefR)
   CC = HC + TC
 
-  CG_min_HC = CG - HC
-  CG_min_CC = CG - CC
+  CGnet_min_HC = CG_net - HC
+  CGnet_min_CC = CG_net - CC
+  CGgross_min_HC = CG_gross - HC
+  CGgross_min_CC = CG_gross - CC
 
-  CG_min_C = c(CG_min_HC, CG_min_CC)
-  ID = c(rep("HC", length(CG_min_HC)),
-         rep("CC", length(CG_min_CC)))
+  CG_min_C = c(CGnet_min_HC, CGnet_min_CC, CGgross_min_HC, CGgross_min_CC)
+  cost = c(rep("HC", length(CGnet_min_HC)),
+         rep("CC", length(CGnet_min_CC)),
+         rep("HC", length(CGgross_min_HC)),
+         rep("CC", length(CGgross_min_CC))
+         )
+  A = c(rep("net", length(CGnet_min_HC)),
+           rep("net", length(CGnet_min_CC)),
+           rep("gross", length(CGgross_min_HC)),
+           rep("gross", length(CGgross_min_CC))
+  )
 
-  df = data.frame(P, ID, CG_min_C)
+  df = data.frame(P, CG_min_C, cost, A)
   return(df)
 }
 

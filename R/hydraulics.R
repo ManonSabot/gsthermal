@@ -181,7 +181,7 @@ trans_from_vc = function(P,
                          )
 {
   VC = vulnerability_curve(P, b, c)
-  kmax = calc_kmax(kmax_25, T_air, constant_kmax = FALSE)
+  kmax = calc_kmax(kmax_25, T_air, constant_kmax)
 
   # Create lists of first n water potential and PLC values for all n from 1 to the number of points in P
   P_list = sapply(1:length(P), function(n) P[1:n])
