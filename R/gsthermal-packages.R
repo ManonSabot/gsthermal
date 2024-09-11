@@ -1,5 +1,6 @@
 #' @importFrom pracma trapz
-#' @importFrom plantecophys Photosyn
+#' @importFrom plantecophys Photosyn esat
+#' @importFrom stats uniroot
 
 NULL
 #> NULL

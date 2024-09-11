@@ -134,7 +134,8 @@ thermal_cost = function(P,
                         )
 {
   E = trans_from_vc(P, kmax_25, T_air, b, c, constant_kmax)
-  T_leaf = calc_Tleaf(T_air, PPFD, RH, E, u, Patm, leaf_width)
+  T_leaf = calc_Tleaf(T_air = T_air, PPFD = PPFD, RH = RH, E = E, u = u,
+                      Patm = Patm, leaf_width = leaf_width)
 
   r = 2 / (T50 - Tcrit)
 
@@ -377,7 +378,7 @@ calc_costgain = function(
   HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit, constant_kmax)
   TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50, constant_kmax)
   CG_net = C_gain(P, b, c, Amax_net, kmax_25, T_air, PPFD, Patm, u, leaf_width,
-              RH, Ca, Jmax, Vcmax, constant_kmax, net = TRUE, Rd0, TrefR)
+              RH, Ca, Jmax, Vcmax, constant_kmax, net = TRUE, Rd0, TrefR, netOrig = FALSE)
   CG_gross = C_gain(P, b, c, Amax_gross, kmax_25, T_air, PPFD, Patm, u, leaf_width,
                     RH, Ca, Jmax, Vcmax, constant_kmax, net = FALSE, Rd0, TrefR)
 
@@ -437,7 +438,7 @@ gain_min_costs = function(
   HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit, constant_kmax)
   TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50, constant_kmax)
   CG_net = C_gain(P, b, c, Amax_net, kmax_25, T_air, PPFD, Patm, u, leaf_width,
-              RH, Ca, Jmax, Vcmax, constant_kmax, net = TRUE, Rd0, TrefR)
+              RH, Ca, Jmax, Vcmax, constant_kmax, net = TRUE, Rd0, TrefR, netOrig = FALSE)
   CG_gross = C_gain(P, b, c, Amax_gross, kmax_25, T_air, PPFD, Patm, u, leaf_width,
                   RH, Ca, Jmax, Vcmax, constant_kmax, net = FALSE, Rd0, TrefR)
   CC = HC + TC

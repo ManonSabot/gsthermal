@@ -1,4 +1,138 @@
+# Non-vectorized function for calculating leaf temperature
+calc_Tleaf_fn = function (
+    E = 0.2,
+    T_air = 25,
+    ...
+)
+{
+  Tleaf <- try(uniroot(leaf_energy_balance,
+                       interval = c(T_air - 15, T_air + 15), E = E, T_air = T_air,
+                       ...)$root)
+  return(Tleaf)
+}
+
 #' Leaf temperature
+#' @description Calculate leaf temperature from energy balance. Adapted from
+#'     '\code{plantecophys::FindTleaf}.
+#'
+#' @param T_air Air temperature, deg C
+#' @param PPFD Photosynthetic photon flux density, mu mol m-2 s-1
+#' @param RH Relative humidity, in \%
+#' @param E Transpiration rate, mmol m-2 s-1
+#' @param u Wind speed above the leaf boundary layer, m s-1
+#' @param Patm Atmospheric pressure, kPa
+#' @param leaf_width Leaf width, m
+#'
+#' @return Leaf temperature, deg C
+#'
+#' @examples
+#' # Calculate leaf temperature for scalar value of E
+#' calc_Tleaf(E = 0.2, T_air = 25)
+#'
+#'
+#' # Calculate leaf temperature along transpiration supply stream
+#' Weibull = fit_Weibull() # Fit Weibull parameters
+#' b = Weibull[1,1]
+#' c = Weibull[1,2]
+#' Pcrit = calc_Pcrit(b, c) # Calculate Pcrit based on Weibull curve
+#'
+#' P = Ps_to_Pcrit(Pcrit = Pcrit) # Create Ps to Pcrit vector
+#' trans = trans_from_vc(P = P, b = b, c = c) # Create vector of transpiration supply stream
+#'
+#' Tleaves = calc_Tleaf(E = trans) # Get leaf temperatures
+#'
+#' @export calc_Tleaf
+#' @rdname calc_Tleaf
+calc_Tleaf = function(
+    E = 0.2,
+    T_air = 25,
+    PPFD = 1000,
+    RH = 60,
+    u = 2,
+    Patm = 101.325,
+    leaf_width = 0.01
+)
+{
+  fn = Vectorize(calc_Tleaf_fn)
+  out = fn(E = E, T_air = T_air, PPFD = PPFD, RH = RH, u = u, Patm = Patm,
+           leaf_width = leaf_width)
+  return(out)
+}
+
+#' Leaf energy balance
+#'
+#' @param T_leaf Leaf temperature, deg C
+#' @param T_air Air temperature, deg C
+#' @param E Transpiration rate, mmol m-2 s-1
+#' @param PPFD Photosynthetic photon flux density, mu mol m-2 s-1
+#' @param RH Relative humidity, in \%
+#' @param u Wind speed above the leaf boundary layer, m s-1
+#' @param Patm Atmospheric pressure, kPa
+#' @param leaf_width Leaf width, m
+#' @param leaf_abs Leaf absorptance of solar radiation (0-1)
+#'
+#' @return Leaf temperature, deg C
+#' @noRd
+leaf_energy_balance = function(
+    T_leaf = 25,
+    T_air = 25,
+    E = 0.2,
+    PPFD = 1500,
+    RH = 70,
+    Patm = 101.325,
+    u = 2, # m s-1
+    leaf_width = 0.01, # m
+    leaf_abs = 0.5,
+    returnwhat = c("balance", "fluxes")
+    )
+{
+  returnwhat <- match.arg(returnwhat)
+  Boltz <- 5.67 * 10^-8
+  Emissivity <- 0.95
+  LatEvap <- 2.54
+  CPAIR <- 1010
+  H2OLV0 <- 2501000
+  H2OMW <- 0.018
+  AIRMA <- 0.029
+  AIRDENS <- 1.204
+  UMOLPERJ <- 4.57
+  DHEAT <- 2.15e-05
+  Tair_k <- T_air + 273.15
+  Tleaf_k <- T_leaf + 273.15
+  AIRDENS <- Patm * 1000/(287.058 * Tair_k)
+  LHV <- (H2OLV0 - 2365 * T_air) * H2OMW
+  SLOPE <- (plantecophys::esat(T_air + 0.1) - plantecophys::esat(T_air))/0.1
+  Gradiation <- 4 * Boltz * Tair_k^3 * Emissivity/(CPAIR *
+                                                     AIRMA)
+  CMOLAR <- Patm * 1000/(8.314 * Tair_k)
+  Gbhforced <- 0.003 * sqrt(u/leaf_width) * CMOLAR
+  GRASHOF <- 1.6e+08 * abs(T_leaf - T_air) * (leaf_width^3)
+  Gbhfree <- 0.5 * DHEAT * (GRASHOF^0.25)/leaf_width * CMOLAR
+  Gbh <- 2 * (Gbhfree + Gbhforced)
+  Rsol <- 2 * PPFD/UMOLPERJ
+  VPD <- calc_VPD(T_air = T_air, RH = RH)
+  ea <- plantecophys::esat(T_air) - 1000 * VPD
+  ema <- 0.642 * (ea/Tair_k)^(1/7)
+  Rnetiso <- leaf_abs * Rsol - (1 - ema) * Boltz * Tair_k^4
+  GAMMA <- CPAIR * AIRMA * Patm * 1000/LHV
+  ET <- E/1000
+  lambdaET <- LHV * ET
+  Y <- 1/(1 + Gradiation/Gbh)
+  H2 <- Y * (Rnetiso - lambdaET)
+  H <- -CPAIR * AIRDENS * (Gbh/CMOLAR) * (T_air - T_leaf)
+  Tleaf2 <- T_air + H2/(CPAIR * AIRDENS * (Gbh/CMOLAR))
+  EnergyBal <- T_leaf - Tleaf2
+  if (returnwhat == "balance")
+    return(EnergyBal)
+  if (returnwhat == "fluxes") {
+    l <- data.frame(ELEAFeb = 1000 * ET, Gradiation = Gradiation,
+                    Rsol = Rsol, Rnetiso = Rnetiso, H = H, lambdaET = lambdaET,
+                    Gbh = Gbh, H2 = H2, Tleaf2 = Tleaf2)
+    return(l)
+  }
+}
+
+#' Leaf temperature, old version
 #'
 #' @param T_air Air temperature, deg C
 #' @param PPFD Photosynthetic photon flux density, mu mol m-2 s-1
@@ -25,8 +159,8 @@
 #' P = Ps_to_Pcrit(Pcrit = Pcrit) # Create Ps to Pcrit vector
 #' trans = trans_from_vc(P = P, b = b, c = c) # Create vector of transpiration supply stream
 #'
-#' Tleaves = calc_Tleaf(E = trans) # Get leaf temperatures
-calc_Tleaf = function(
+#' Tleaves = calc_Tleaf0(E = trans) # Get leaf temperatures
+calc_Tleaf0 = function(
     T_air = 25,
     PPFD = 1000,
     RH = 60,
@@ -196,7 +330,8 @@ calc_A = function(T_air = 25,
                   netOrig = TRUE
 )
 {
-  T_leaf = calc_Tleaf(T_air, PPFD, RH, E, u, Patm, leaf_width)
+  T_leaf = calc_Tleaf(T_air = T_air, PPFD = PPFD, RH = RH, E = E, u = u,
+                      Patm = Patm, leaf_width = leaf_width)
   D_leaf = calc_Dleaf(T_leaf, T_air, RH)
   g_w = calc_gw(E, D_leaf, Patm)
 
@@ -317,7 +452,8 @@ calc_gHa = function(
 calc_Rd = function(T_air = 25, PPFD = 1000, RH = 60, E, u = 2, Patm = 101.325,
                    leaf_width = 0.01, Rd0 = 0.92, TrefR = 25)
 {
-  T_leaf = calc_Tleaf(T_air, PPFD, RH, E, u, Patm, leaf_width)
+  T_leaf = calc_Tleaf(T_air = T_air, PPFD = PPFD, RH = RH, E = E, u = u,
+                      Patm = Patm, leaf_width = leaf_width)
   Rd = Rd0 * exp(0.1012 * (T_leaf - TrefR) - 5e-04 * (T_leaf^2 - TrefR^2))
   return(Rd)
 }
