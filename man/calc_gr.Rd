@@ -4,10 +4,10 @@
 \alias{calc_gr}
 \title{Radiative conductance}
 \usage{
-calc_gr(T_air = 25, epsilon = 0.97)
+calc_gr(Tair = 25, epsilon = 0.97)
 }
 \arguments{
-\item{T_air}{Air temperature, deg C}
+\item{Tair}{Air temperature, deg C}
 
 \item{epsilon}{Leaf emissivity}
 }
@@ -18,5 +18,5 @@ Radiative conductance, mol m-2 s-1
 Radiative conductance
 }
 \examples{
-calc_gr(T_air = 30)
+calc_gr(Tair = 30)
 }

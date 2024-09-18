@@ -9,7 +9,7 @@ hydraulic_cost(
   b = -2.5,
   c = 2,
   kmax_25 = 4,
-  T_air = 25,
+  Tair = 25,
   ratiocrit = 0.05,
   constant_kmax = FALSE
 )
@@ -24,7 +24,7 @@ hydraulic_cost(
 
 \item{kmax_25}{Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1}
 
-\item{T_air}{Air temperature, deg C}
+\item{Tair}{Air temperature, deg C}
 
 \item{ratiocrit}{Percentage of maximum conductivity at which hydraulic damage
 is considered irreversible}

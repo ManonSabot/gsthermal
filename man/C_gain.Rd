@@ -10,12 +10,13 @@ C_gain(
   c = 2,
   Amax = NULL,
   kmax_25 = 4,
-  T_air = 25,
+  Tair = 25,
+  VPD = 1.5,
   PPFD = 1000,
   Patm = 101.325,
-  u = 2,
-  leaf_width = 0.01,
-  RH = 60,
+  Wind = 2,
+  Wleaf = 0.01,
+  LeafAbs = 0.5,
   Ca = 420,
   Jmax = 100,
   Vcmax = 50,
@@ -23,7 +24,8 @@ C_gain(
   net = FALSE,
   Rd0 = 0.92,
   TrefR = 25,
-  netOrig = TRUE
+  netOrig = TRUE,
+  ...
 )
 }
 \arguments{
@@ -40,17 +42,19 @@ potential rate described by Sperry et al. (2016).}
 
 \item{kmax_25}{Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1}
 
-\item{T_air}{Air temperature, deg C}
+\item{Tair}{Air temperature, deg C}
+
+\item{VPD}{Air vapor pressure deficit, kPa}
 
 \item{PPFD}{Photosynthetic photon flux density, mu mol m-2 s-1}
 
 \item{Patm}{Atmospheric pressure, kPa}
 
-\item{u}{Wind speed above the leaf boundary layer, m s-1}
+\item{Wind}{Wind speed above the leaf boundary layer, m s-1}
 
-\item{leaf_width}{Leaf width, m}
+\item{Wleaf}{Leaf width, m}
 
-\item{RH}{Relative humidity, in \%}
+\item{LeafAbs}{Leaf absorptance of solar radiation (0-1)}
 
 \item{Ca}{Atmospheric CO2 concentration (ppm)}
 
@@ -69,7 +73,9 @@ is gross photosynthesis}
 \item{TrefR}{Reference temperature for Rd (deg C)}
 
 \item{netOrig}{TRUE if net photosynthesis is to be calculated within
-plantecophys::Photosyn. FALSE if Anet is to be calculated as Agross - Rd.}
+\code{plantecophys::Photosyn}. FALSE if Anet is to be calculated as Agross - Rd.}
+
+\item{...}{Further parameters passed to \code{plantecophys::Photosyn}.}
 }
 \value{
 Normalized carbon gain

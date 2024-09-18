@@ -4,16 +4,16 @@
 \alias{calc_gHa}
 \title{Boundary layer conductance to forced convection}
 \usage{
-calc_gHa(T_air = 25, u = 2, Patm = 101.325, leaf_width = 0.01)
+calc_gHa(Tair = 25, Wind = 2, Patm = 101.325, Wleaf = 0.01)
 }
 \arguments{
-\item{T_air}{Air temperature, deg C}
+\item{Tair}{Air temperature, deg C}
 
-\item{u}{Wind speed above the leaf boundary layer, m s-1}
+\item{Wind}{Wind speed above the leaf boundary layer, m s-1}
 
 \item{Patm}{Atmospheric pressure, kPa}
 
-\item{leaf_width}{Leaf width, m}
+\item{Wleaf}{Leaf width, m}
 }
 \value{
 Boundary layer conductance to forced convection, mol m-2 s-1

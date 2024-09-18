@@ -4,10 +4,10 @@
 \alias{F0_func}
 \title{F0-T Curve}
 \usage{
-F0_func(T_leaf, Tcrit = 50, T50 = 51, F0_max = 1000, F0_min = 500)
+F0_func(Tleaf, Tcrit = 50, T50 = 51, F0_max = 1000, F0_min = 500)
 }
 \arguments{
-\item{T_leaf}{Leaf temperature, deg C}
+\item{Tleaf}{Leaf temperature, deg C}
 
 \item{Tcrit}{Leaf temperature at which F0(T) transitions from slow- to fast- rise, deg C}
 
@@ -27,6 +27,6 @@ Calculates the value of minimum fluorescence (F0) associated
 }
 \examples{
 Tleaf = seq(25, 50, length.out = 500)
-curve = F0_func(T_leaf = Tleaf)
+curve = F0_func(Tleaf = Tleaf)
 plot(Tleaf, curve, type = "l")
 }

@@ -123,20 +123,20 @@ vulnerability_curve = function(P,
 #'     temperature
 #'
 #' @param kmax_25 Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1
-#' @param T_air Air temperature, deg C
+#' @param Tair Air temperature, deg C
 #' @param constant_kmax TRUE if the kmax does not vary with temperature for
 #'     simulations; else FALSE
 #'
 #' @return Whole plant conductivity at Tair, mmol s-1 m-2 MPa-1
 #' @export
 calc_kmax = function(kmax_25 = 4,
-                     T_air = 25,
+                     Tair = 25,
                      constant_kmax = FALSE
 )
 {
   if (isFALSE(constant_kmax)) {
-  T_airK = T_air+273.15
-  kmax = kmax_25 * (T_airK**7 / 298.15**7)
+  TairK = Tair+273.15
+  kmax = kmax_25 * (TairK**7 / 298.15**7)
   } else {
     kmax = kmax_25
   }
@@ -151,7 +151,7 @@ calc_kmax = function(kmax_25 = 4,
 #'
 #' @param P Vector with water potentials, -MPa
 #' @param kmax_25 Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1
-#' @param T_air Air temperature, deg C
+#' @param Tair Air temperature, deg C
 #' @param b Weibull scale parameter
 #' @param c Weibull shape parameter
 #' @param constant_kmax TRUE if the kmax does not vary with temperature for
@@ -174,14 +174,14 @@ calc_kmax = function(kmax_25 = 4,
 #' trans = trans_from_vc(P = P, b = b, c = c)
 trans_from_vc = function(P,
                          kmax_25 = 4,
-                         T_air = 25,
+                         Tair = 25,
                          b = -2.5,
                          c = 2,
                          constant_kmax = FALSE
                          )
 {
   VC = vulnerability_curve(P, b, c)
-  kmax = calc_kmax(kmax_25, T_air, constant_kmax)
+  kmax = calc_kmax(kmax_25, Tair, constant_kmax)
 
   # Create lists of first n water potential and PLC values for all n from 1 to the number of points in P
   P_list = sapply(1:length(P), function(n) P[1:n])

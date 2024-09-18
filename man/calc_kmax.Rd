@@ -4,12 +4,12 @@
 \alias{calc_kmax}
 \title{Temperature dependence of conductivity}
 \usage{
-calc_kmax(kmax_25 = 4, T_air = 25, constant_kmax = FALSE)
+calc_kmax(kmax_25 = 4, Tair = 25, constant_kmax = FALSE)
 }
 \arguments{
 \item{kmax_25}{Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1}
 
-\item{T_air}{Air temperature, deg C}
+\item{Tair}{Air temperature, deg C}
 
 \item{constant_kmax}{TRUE if the kmax does not vary with temperature for
 simulations; else FALSE}

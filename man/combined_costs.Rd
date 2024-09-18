@@ -9,13 +9,14 @@ combined_costs(
   b = -2.5,
   c = 2,
   kmax_25 = 4,
-  T_air = 25,
+  Tair = 25,
+  VPD = 1.5,
   ratiocrit = 0.05,
   PPFD = 1000,
-  RH = 90,
   Patm = 101.325,
-  u = 2,
-  leaf_width = 0.01,
+  Wind = 2,
+  Wleaf = 0.01,
+  LeafAbs = 0.5,
   Tcrit = 50,
   T50 = 51,
   Ca = 420,
@@ -34,20 +35,22 @@ combined_costs(
 
 \item{kmax_25}{Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1}
 
-\item{T_air}{Air temperature, deg C}
+\item{Tair}{Air temperature, deg C}
+
+\item{VPD}{Air vapor pressure deficit, kPa}
 
 \item{ratiocrit}{Percentage of maximum conductivity at which hydraulic damage
 is considered irreversible}
 
 \item{PPFD}{Photosynthetic photon flux density, mu mol m-2 s-1}
 
-\item{RH}{Relative humidity, in \%}
-
 \item{Patm}{Atmospheric pressure, kPa}
 
-\item{u}{Wind speed above the leaf boundary layer, m s-1}
+\item{Wind}{Wind speed above the leaf boundary layer, m s-1}
 
-\item{leaf_width}{Leaf width, m}
+\item{Wleaf}{Leaf width, m}
+
+\item{LeafAbs}{Leaf absorptance of solar radiation (0-1)}
 
 \item{Tcrit}{Leaf temperature at which F0(T) transitions from slow- to fast- rise, deg C}
 

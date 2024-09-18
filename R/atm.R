@@ -1,28 +1,6 @@
-#' Vapor pressure deficit
-#' @description Calculate the atmospheric VPD at given relative humidity and air
-#'     temperature
-#'
-#' @param T_air Air temperature, deg C
-#' @param RH Relative humidity, in \%
-#'
-#' @return Vapor pressure deficit, kPa
-#' @export
-calc_VPD = function(
-    T_air = 25, # deg C
-    RH = 60 # unitless
-)
-{
-  esat_a = vpsat(T_air)
-  VPD = esat_a * (1 - RH / 100) # kPa
-  return(VPD)
-}
-
-
-
-
 #' Calculate net radiation
 #'
-#' @param T_air Air temperature, deg C
+#' @param Tair Air temperature, deg C
 #' @param PPFD Photosynthetic photon flux density, mu mol m-2 s-1
 #' @param VPD Atmospheric vapor pressure deficit, kPa
 #' @param albedo Leaf albedo, unitless
@@ -30,7 +8,7 @@ calc_VPD = function(
 #'
 #' @return Net radiation, W m-2
 #' @export
-calc_Rnet = function(T_air = 25,
+calc_Rnet = function(Tair = 25,
                      PPFD = 1000,
                      VPD = 1.5,
                      albedo = 0.15,
@@ -43,8 +21,8 @@ calc_Rnet = function(T_air = 25,
   sigma = 5.67e-8 # Stefan-Boltzman constant, W m-2 K-4
 
   # unit conversions
-  TairK = T_air + 273 # air temperature in Kelvin
-  emissivity = calc_emissivity(T_air, VPD)
+  TairK = Tair + 273 # air temperature in Kelvin
+  emissivity = calc_emissivity(Tair, VPD)
   # incoming short and long wave radiation
   Rsw = (1. - albedo) * PPFD * PAR_2_SW  # W m-2
   Rlw = emissivity * sigma * TairK ** 4.  # W m-2
@@ -73,20 +51,20 @@ vpsat = function(
 
 #' Calculate atmospheric emissivity
 #'
-#' @param T_air Air temperature, deg C
+#' @param Tair Air temperature, deg C
 #' @param VPD Atmospheric vapor pressure deficit, kPa
 #'
 #' @return Apparent atmospheric emissivity, unitless
 #' @noRd
-calc_emissivity = function(T_air = 25,
+calc_emissivity = function(Tair = 25,
                            VPD = 1.5
 )
 {
   # Constants
   sigma = 5.67e-8 # Stefan-Boltzman constant, W m-2 K-4
 
-  TairK = T_air + 273 # air temperature in Kelvin
-  ea = (vpsat(T_air) - 4)*1e3
+  TairK = Tair + 273 # air temperature in Kelvin
+  ea = (vpsat(Tair) - 4)*1e3
   emissivity = (0.031 * ea + 2.84 * TairK - 522.5) / (sigma * TairK ** 4.)
   return(emissivity)
 }

@@ -7,7 +7,7 @@
 trans_from_vc(
   P,
   kmax_25 = 4,
-  T_air = 25,
+  Tair = 25,
   b = -2.5,
   c = 2,
   constant_kmax = FALSE
@@ -18,7 +18,7 @@ trans_from_vc(
 
 \item{kmax_25}{Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1}
 
-\item{T_air}{Air temperature, deg C}
+\item{Tair}{Air temperature, deg C}
 
 \item{b}{Weibull scale parameter}
 

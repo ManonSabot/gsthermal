@@ -7,7 +7,7 @@
 #' @param b Weibull scale parameter
 #' @param c Weibull shape parameter
 #' @param kmax_25 Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1
-#' @param T_air Air temperature, deg C
+#' @param Tair Air temperature, deg C
 #' @param ratiocrit Percentage of maximum conductivity at which hydraulic damage
 #'     is considered irreversible
 #' @param constant_kmax TRUE if the kmax does not vary with temperature for
@@ -30,12 +30,12 @@ hydraulic_cost = function(P,
                           b = -2.5,
                           c = 2,
                           kmax_25 = 4,
-                          T_air = 25,
+                          Tair = 25,
                           ratiocrit = 0.05,
                           constant_kmax = FALSE
 )
 {
-  kmax = calc_kmax(kmax_25, T_air, constant_kmax)
+  kmax = calc_kmax(kmax_25, Tair, constant_kmax)
   kcrit = ratiocrit*kmax
   k = kmax * vulnerability_curve(P, b, c)
   kmax_i = max(k)
@@ -69,18 +69,19 @@ respiratory_cost = function(P,
                             c = 2,
                             Amax = NULL,
                             kmax_25 = 4,
-                            T_air = 25,
+                            Tair = 25,
+                            VPD = 1.5,
                             PPFD = 1000,
                             Patm = 101.325,
-                            u = 2,
-                            leaf_width = 0.01,
-                            RH = 60,
+                            Wind = 2,
+                            Wleaf = 0.01,
+                            LeafAbs = 0.5,
                             constant_kmax = FALSE,
                             Rd0 = 0.92,
                             TrefR = 25)
 {
-  E = trans_from_vc(P, kmax_25, T_air, b, c, constant_kmax)
-  Rd = calc_Rd(T_air, PPFD, RH, E, u, Patm, leaf_width, Rd0, TrefR)
+  E = trans_from_vc(P, kmax_25, Tair, b, c, constant_kmax)
+  Rd = calc_Rd(Tair, VPD, PPFD, E, Wind, Patm, Wleaf, LeafAbs, Rd0, TrefR)
   Rd_min = min(Rd)
 
   if (is.null(Amax)) {
@@ -96,11 +97,12 @@ respiratory_cost = function(P,
 #' @description Calculates the normalized thermal cost based on F0-T curve
 #'
 #' @inheritParams hydraulic_cost
+#' @param VPD Air vapor pressure deficit, kPa
 #' @param PPFD Photosynthetic photon flux density, mu mol m-2 s-1
-#' @param RH Relative humidity, in \%
 #' @param Patm Atmospheric pressure, kPa
-#' @param u Wind speed above the leaf boundary layer, m s-1
-#' @param leaf_width Leaf width, m
+#' @param Wind Wind speed above the leaf boundary layer, m s-1
+#' @param Wleaf Leaf width, m
+#' @param LeafAbs Leaf absorptance of solar radiation (0-1)
 #' @param Tcrit Leaf temperature at which F0(T) transitions from slow- to fast- rise, deg C
 #' @param T50 Leaf temperature midway between Tcrit and Tmax, deg C
 #' @param constant_kmax TRUE if the kmax does not vary with temperature for
@@ -122,85 +124,30 @@ thermal_cost = function(P,
                         b = -2.5,
                         c = 2,
                         kmax_25 = 4,
-                        T_air = 25,
+                        Tair = 25,
+                        VPD = 1.5,
                         PPFD = 1000,
-                        RH = 90,
                         Patm = 101.325,
-                        u = 2,
-                        leaf_width = 0.01,
+                        Wind = 2,
+                        Wleaf = 0.01,
+                        LeafAbs = 0.5,
                         Tcrit = 50,
                         T50  = 51,
                         constant_kmax = FALSE
                         )
 {
-  E = trans_from_vc(P, kmax_25, T_air, b, c, constant_kmax)
-  T_leaf = calc_Tleaf(T_air = T_air, PPFD = PPFD, RH = RH, E = E, u = u,
-                      Patm = Patm, leaf_width = leaf_width)
+  E = trans_from_vc(P, kmax_25, Tair, b, c, constant_kmax)
+  Tleaf = calc_Tleaf(Tair = Tair, VPD = VPD, PPFD = PPFD, E = E, Wind = Wind,
+                      Patm = Patm, Wleaf = Wleaf, LeafAbs = LeafAbs)
 
   r = 2 / (T50 - Tcrit)
 
-  cost = 1 / (1 + exp(-r * (T_leaf - T50)))
+  cost = 1 / (1 + exp(-r * (Tleaf - T50)))
   return(cost)
 }
 
 
-#' Thermal cost function, old version (use `thermal_cost` instead)
-#' @description Calculates the normalized thermal cost based on F0-T curve
-#'
-#' @param P Vector of equally spaced water potentials ranging from Ps to Pcrit, -MPa
-#' @param b Weibull scale parameter
-#' @param c Weibull shape parameter
-#' @param kmax_25 Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1
-#' @param T_air Air temperature, deg C
-#' @param PPFD Photosynthetic photon flux density, mu mol m-2 s-1
-#' @param RH Relative humidity, in \%
-#' @param Patm Atmospheric pressure, kPa
-#' @param u Wind speed above the leaf boundary layer, m s-1
-#' @param leaf_width Leaf width, m
-#' @param T50 Leaf temperature midway between Tcrit and Tmax, deg C
-#' @param F0_max Maximum F0 (achieved at Tmax)
-#' @param F0_min Minimum (i.e. undamaged) F0
-#' @param r Scaling factor for F0-T curve
-#' @param constant_kmax TRUE if the kmax does not vary with temperature for
-#'     simulations; else FALSE
-#'
-#' @return Normalized thermal cost, unitless
-#' @export
-#'
-#' @examples
-#' # Calculate leaf VPD along transpiration supply stream
-#' Weibull = fit_Weibull() # Fit Weibull parameters
-#' b = Weibull[1,1]
-#' c = Weibull[1,2]
-#' Pcrit = calc_Pcrit(b, c) # Calculate Pcrit based on Weibull curve
-#' P = Ps_to_Pcrit(Pcrit = Pcrit) # Create Ps to Pcrit vector
-#'
-#' thermal_cost(P, b, c)
-thermal_cost_v0 = function(P,
-                        b = -2.5,
-                        c = 2,
-                        kmax_25 = 4,
-                        T_air = 25,
-                        PPFD = 1000,
-                        RH = 90,
-                        Patm = 101.325,
-                        u = 2,
-                        leaf_width = 0.01,
-                        T50  = 51,
-                        F0_max = 1000,
-                        F0_min = 500,
-                        r = 4,
-                        constant_kmax = FALSE
-)
-{
-  E = trans_from_vc(P, kmax_25, T_air, b, c, constant_kmax)
-  T_leaf = calc_Tleaf(T_air, PPFD, RH, E, u, Patm, leaf_width)
 
-  F0 = F0_func(T_leaf, T50, F0_max, F0_min, r)
-
-  cost = (F0 - F0_min) / (F0_max - F0_min)
-  return(cost)
-}
 
 #' Maximum potential photosynthetic rate
 #' @description Calculates the maximum potential photosynthetic rate for the given
@@ -226,11 +173,12 @@ Amax_overT = function(P,
                       b = -2.5,
                       c = 2,
                       kmax_25 = 4,
+                      VPD = 1.5,
                       PPFD = 1000,
                       Patm = 101.325,
-                      u = 2,
-                      leaf_width = 0.01,
-                      RH = 60,
+                      Wind = 2,
+                      Wleaf = 0.01,
+                      LeafAbs = 0.5,
                       Ca = 420,
                       Jmax = 100,
                       Vcmax = 50,
@@ -239,7 +187,8 @@ Amax_overT = function(P,
                       net = FALSE,
                       Rd0 = 0.92,
                       TrefR = 25,
-                      netOrig = TRUE
+                      netOrig = TRUE,
+                      ...
                       )
 {
   # Calculate the maximum transpiration rate given the vulnerability curve parameters
@@ -250,9 +199,9 @@ Amax_overT = function(P,
   E = kmax * AUC
 
   # Calculate A over the temperature range
-  calc_A_vect = Vectorize(calc_A, c("T_air", "E"))
-  A = calc_A_vect(Tair_range, PPFD, Patm, E, u, leaf_width, RH, Ca, Jmax,
-                  Vcmax, net, Rd0, TrefR, netOrig)
+  calc_A_vect = Vectorize(calc_A, c("Tair", "E"))
+  A = calc_A_vect(Tair_range, VPD, PPFD, Patm, E, Wind, Wleaf, LeafAbs, Ca,
+                  Jmax, Vcmax, net, Rd0, TrefR, netOrig,...)
 
   # Select the maximum photosynthetic rate and corresponding temperature
   i = ifelse(all(A <= 0), which.max(abs(A)), which.max(A))
@@ -261,6 +210,8 @@ Amax_overT = function(P,
   Tair_opt = Tair_range[i]
   return(data.frame(Tair_opt, Amax))
 }
+
+
 
 #' Carbon gain
 #' @description Calculates the normalized carbon gain as described in Sperry et
@@ -290,12 +241,13 @@ C_gain = function(P,
                   c = 2,
                   Amax = NULL,
                   kmax_25 = 4,
-                  T_air = 25,
+                  Tair = 25,
+                  VPD = 1.5,
                   PPFD = 1000,
                   Patm = 101.325,
-                  u = 2,
-                  leaf_width = 0.01,
-                  RH = 60,
+                  Wind = 2,
+                  Wleaf = 0.01,
+                  LeafAbs = 0.5,
                   Ca = 420,
                   Jmax = 100,
                   Vcmax = 50,
@@ -303,13 +255,14 @@ C_gain = function(P,
                   net = FALSE,
                   Rd0 = 0.92,
                   TrefR = 25,
-                  netOrig = TRUE
+                  netOrig = TRUE,
+                  ...
                   )
 {
   # Calculate the photosynthesis over the transpiration supply stream
-  E = trans_from_vc(P, kmax_25, T_air, b, c, constant_kmax)
-  A = calc_A(T_air, PPFD, Patm, E, u, leaf_width, RH, Ca, Jmax, Vcmax, net, Rd0,
-             TrefR, netOrig)
+  E = trans_from_vc(P, kmax_25, Tair, b, c, constant_kmax)
+  A = calc_A(Tair, VPD, PPFD, Patm, E, Wind, Wleaf, LeafAbs, Ca, Jmax, Vcmax,
+             net, Rd0, TrefR, netOrig,...)
 
   # Calculate Amax if not provided
   #Amax = ifelse(is.null(Amax), abs(max(A)), Amax)
@@ -358,13 +311,14 @@ calc_costgain = function(
     Amax_gross = NULL,
     Amax_net = NULL,
     kmax_25 = 4,
-    T_air = 25,
+    Tair = 25,
+    VPD = 1.5,
     ratiocrit = 0.05,
     PPFD = 1000,
-    RH = 90,
     Patm = 101.325,
-    u = 2,
-    leaf_width = 0.01,
+    Wind = 2,
+    Wleaf = 0.01,
+    LeafAbs = 0.5,
     Tcrit = 50,
     T50 = 51,
     Ca = 420,
@@ -372,15 +326,19 @@ calc_costgain = function(
     Vcmax = 50,
     constant_kmax = FALSE,
     Rd0 = 0.92,
-    TrefR = 25
+    TrefR = 25,
+    ...
 )
 {
-  HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit, constant_kmax)
-  TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50, constant_kmax)
-  CG_net = C_gain(P, b, c, Amax_net, kmax_25, T_air, PPFD, Patm, u, leaf_width,
-              RH, Ca, Jmax, Vcmax, constant_kmax, net = TRUE, Rd0, TrefR, netOrig = FALSE)
-  CG_gross = C_gain(P, b, c, Amax_gross, kmax_25, T_air, PPFD, Patm, u, leaf_width,
-                    RH, Ca, Jmax, Vcmax, constant_kmax, net = FALSE, Rd0, TrefR)
+  HC = hydraulic_cost(P, b, c, kmax_25, Tair, ratiocrit, constant_kmax)
+  TC = thermal_cost(P, b, c, kmax_25, Tair, VPD, PPFD, Patm, Wind, Wleaf,
+                    LeafAbs, Tcrit, T50, constant_kmax)
+  CG_net = C_gain(P, b, c, Amax_net, kmax_25, Tair, VPD, PPFD, Patm, Wind, Wleaf,
+              LeafAbs, Ca, Jmax, Vcmax, constant_kmax, net = TRUE, Rd0, TrefR,
+              netOrig = FALSE, ...)
+  CG_gross = C_gain(P, b, c, Amax_gross, kmax_25, Tair, VPD, PPFD, Patm, Wind,
+                    Wleaf, LeafAbs, Ca, Jmax, Vcmax, constant_kmax, net = FALSE,
+                    Rd0, TrefR, ...)
 
   cost_gain = c(HC, TC, CG_net, CG_gross)
   ID = c(rep("HC", length(HC)),
@@ -418,13 +376,14 @@ gain_min_costs = function(
     Amax_gross = NULL,
     Amax_net = NULL,
     kmax_25 = 4,
-    T_air = 25,
+    Tair = 25,
+    VPD = 1.5,
     ratiocrit = 0.05,
     PPFD = 1000,
-    RH = 90,
     Patm = 101.325,
-    u = 2,
-    leaf_width = 0.01,
+    Wind = 2,
+    Wleaf = 0.01,
+    LeafAbs = 0.5,
     Tcrit = 50,
     T50 = 51,
     Ca = 420,
@@ -432,15 +391,19 @@ gain_min_costs = function(
     Vcmax = 50,
     constant_kmax = FALSE,
     Rd0 = 0.92,
-    TrefR = 25
+    TrefR = 25,
+    ...
     )
 {
-  HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit, constant_kmax)
-  TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50, constant_kmax)
-  CG_net = C_gain(P, b, c, Amax_net, kmax_25, T_air, PPFD, Patm, u, leaf_width,
-              RH, Ca, Jmax, Vcmax, constant_kmax, net = TRUE, Rd0, TrefR, netOrig = FALSE)
-  CG_gross = C_gain(P, b, c, Amax_gross, kmax_25, T_air, PPFD, Patm, u, leaf_width,
-                  RH, Ca, Jmax, Vcmax, constant_kmax, net = FALSE, Rd0, TrefR)
+  HC = hydraulic_cost(P, b, c, kmax_25, Tair, ratiocrit, constant_kmax)
+  TC = thermal_cost(P, b, c, kmax_25, Tair, VPD, PPFD, Patm, Wind, Wleaf,
+                    LeafAbs, Tcrit, T50, constant_kmax)
+  CG_net = C_gain(P, b, c, Amax_net, kmax_25, Tair, VPD, PPFD, Patm, Wind, Wleaf,
+                  LeafAbs, Ca, Jmax, Vcmax, constant_kmax, net = TRUE, Rd0,
+                  TrefR, netOrig = FALSE, ...)
+  CG_gross = C_gain(P, b, c, Amax_gross, kmax_25, Tair, VPD, PPFD, Patm, Wind, Wleaf,
+                  LeafAbs, Ca, Jmax, Vcmax, constant_kmax, net = FALSE, Rd0, TrefR,
+                  ...)
   CC = HC + TC
 
   CGnet_min_HC = CG_net - HC
@@ -490,13 +453,14 @@ combined_costs = function(
     b = -2.5,
     c = 2,
     kmax_25 = 4,
-    T_air = 25,
+    Tair = 25,
+    VPD = 1.5,
     ratiocrit = 0.05,
     PPFD = 1000,
-    RH = 90,
     Patm = 101.325,
-    u = 2,
-    leaf_width = 0.01,
+    Wind = 2,
+    Wleaf = 0.01,
+    LeafAbs = 0.5,
     Tcrit = 50,
     T50 = 51,
     Ca = 420,
@@ -505,8 +469,9 @@ combined_costs = function(
     constant_kmax = FALSE
   )
 {
-  HC = hydraulic_cost(P, b, c, kmax_25, T_air, ratiocrit, constant_kmax)
-  TC = thermal_cost(P, b, c, kmax_25, T_air, PPFD, RH, Patm, u, leaf_width, Tcrit, T50, constant_kmax)
+  HC = hydraulic_cost(P, b, c, kmax_25, Tair, ratiocrit, constant_kmax)
+  TC = thermal_cost(P, b, c, kmax_25, Tair, VPD, PPFD, Patm, Wind, Wleaf,
+                    LeafAbs, Tcrit, T50, constant_kmax)
 
   CC = HC + TC
 

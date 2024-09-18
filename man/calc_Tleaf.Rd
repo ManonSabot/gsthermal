@@ -5,29 +5,32 @@
 \title{Leaf temperature}
 \usage{
 calc_Tleaf(
+  Tair = 25,
+  VPD = 1.5,
   E = 0.2,
-  T_air = 25,
   PPFD = 1000,
-  RH = 60,
-  u = 2,
+  Wind = 2,
   Patm = 101.325,
-  leaf_width = 0.01
+  Wleaf = 0.01,
+  LeafAbs = 0.5
 )
 }
 \arguments{
-\item{E}{Transpiration rate, mmol m-2 s-1}
+\item{Tair}{Air temperature, deg C}
 
-\item{T_air}{Air temperature, deg C}
+\item{VPD}{Air vapor pressure deficit, kPa}
+
+\item{E}{Transpiration rate, mmol m-2 s-1}
 
 \item{PPFD}{Photosynthetic photon flux density, mu mol m-2 s-1}
 
-\item{RH}{Relative humidity, in \%}
-
-\item{u}{Wind speed above the leaf boundary layer, m s-1}
+\item{Wind}{Wind speed above the leaf boundary layer, m s-1}
 
 \item{Patm}{Atmospheric pressure, kPa}
 
-\item{leaf_width}{Leaf width, m}
+\item{Wleaf}{Leaf width, m}
+
+\item{LeafAbs}{Leaf absorptance of solar radiation (0-1)}
 }
 \value{
 Leaf temperature, deg C
@@ -38,7 +41,7 @@ Calculate leaf temperature from energy balance. Adapted from
 }
 \examples{
 # Calculate leaf temperature for scalar value of E
-calc_Tleaf(E = 0.2, T_air = 25)
+calc_Tleaf(E = 0.2, Tair = 25)
 
 
 # Calculate leaf temperature along transpiration supply stream

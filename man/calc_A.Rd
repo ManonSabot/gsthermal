@@ -5,24 +5,28 @@
 \title{Calculate photosynthesis}
 \usage{
 calc_A(
-  T_air = 25,
+  Tair = 25,
+  VPD = 1.5,
   PPFD = 1000,
   Patm = 101.325,
-  E,
-  u = 2,
-  leaf_width = 0.01,
-  RH = 60,
+  E = 2,
+  Wind = 2,
+  Wleaf = 0.01,
+  LeafAbs = 0.5,
   Ca = 420,
   Jmax = 100,
   Vcmax = 50,
   net = FALSE,
   Rd0 = 0.92,
   TrefR = 25,
-  netOrig = TRUE
+  netOrig = TRUE,
+  ...
 )
 }
 \arguments{
-\item{T_air}{Air temperature, deg C}
+\item{Tair}{Air temperature, deg C}
+
+\item{VPD}{Air vapor pressure deficit, kPa}
 
 \item{PPFD}{Photosynthetic photon flux density, mu mol m-2 s-1}
 
@@ -30,11 +34,11 @@ calc_A(
 
 \item{E}{Transpiration rate, mmol m-2 s-1}
 
-\item{u}{Wind speed above the leaf boundary layer, m s-1}
+\item{Wind}{Wind speed above the leaf boundary layer, m s-1}
 
-\item{leaf_width}{Leaf width, m}
+\item{Wleaf}{Leaf width, m}
 
-\item{RH}{Relative humidity, in \%}
+\item{LeafAbs}{Leaf absorptance of solar radiation (0-1)}
 
 \item{Ca}{Atmospheric CO2 concentration (ppm)}
 
@@ -50,7 +54,9 @@ is gross photosynthesis}
 \item{TrefR}{Reference temperature for Rd (deg C)}
 
 \item{netOrig}{TRUE if net photosynthesis is to be calculated within
-plantecophys::Photosyn. FALSE if Anet is to be calculated as Agross - Rd.}
+\code{plantecophys::Photosyn}. FALSE if Anet is to be calculated as Agross - Rd.}
+
+\item{\dots}{Further parameters passed to \code{plantecophys::Photosyn}.}
 }
 \value{
 Photosynthetic rate (mol m-2 s-1)

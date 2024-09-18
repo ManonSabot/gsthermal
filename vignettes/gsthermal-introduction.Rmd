@@ -24,9 +24,9 @@ We first set up our environmental variables. We set air temperature equal to 48$
 
 ```{r environment}
 # Environment
-T_air = 48
+Tair = 48
 Ps = 0.2
-RH = 50
+VPD = 5.8
 ```
 
 ## Hydraulics
@@ -50,7 +50,7 @@ P = Ps_to_Pcrit(Ps, Pcrit, pts)
 
 # Calculate vulnerability curve and associated transpiration supply stream
 VC = vulnerability_curve(P, b, c)
-E = trans_from_vc(P, kmax_25, T_air, b, c)
+E = trans_from_vc(P, kmax_25, Tair, b, c)
 
 # Plot VC and E vs LWP
 plot(P, VC, type = 'l', 
@@ -63,17 +63,17 @@ plot(P, E, type = 'l', xlab = "Leaf water potential (-MPa)",
 
 From the transpiration supply function, we calculate the leaf physiological variables over the transpiration stream. We first calculate leaf temperature as
 
-$$T_{leaf} = T_{air} + \frac {R_{net} - \lambda E}{C_p (g_{Ha} + g_r)},$$ where $R_{net}(T_{air}, PPFD, RH)$ is the net radiation (W m^-2^), $\lambda (T_{air})$ is the latent heat of vaporization (J mol^-1^), $C_p$ is the specific heat of air at constant pressure (J mol^-1^ $^\circ$C^-1^), $g_{Ha}$ is the boundary layer conductance to forced convection (mol m^-2^ s^-1^), and $g_r$ is the radiative conductance (mol m^-2^ s^-1^).
+$$T_{leaf} = T_{air} + \frac {R_{net} - \lambda E}{C_p (g_{Ha} + g_r)},$$ where $R_{net}(T_{air}, PPFD, VPD)$ is the net radiation (W m^-2^), $\lambda (T_{air})$ is the latent heat of vaporization (J mol^-1^), $C_p$ is the specific heat of air at constant pressure (J mol^-1^ $^\circ$C^-1^), $g_{Ha}$ is the boundary layer conductance to forced convection (mol m^-2^ s^-1^), and $g_r$ is the radiative conductance (mol m^-2^ s^-1^).
 
-From $T_{leaf}$, we calculate $D_{leaf} = e_{s}(T_{leaf}) - e_a(T_{air}) \frac {RH} {100}$, $g_w = \frac {P_{atm} E} {D_{leaf}}$, and finally the photosynthetic rate $A$ from the **Photosyn** function in the package **plantecophys**.
+From $T_{leaf}$, we calculate $D_{leaf} = e_{sat}(T_{leaf}) - e_{sat}(T_{air}) - VPD$, $g_w = \frac {P_{atm} E} {D_{leaf}}$, and finally the photosynthetic rate $A$ from the **Photosyn** function in the package **plantecophys**.
 
 ```{r physio}
-T_leaf = calc_Tleaf(T_air = T_air, E = E, RH = RH)
-D_leaf = calc_Dleaf(T_leaf = T_leaf, T_air = T_air, RH = RH)
+Tleaf = calc_Tleaf(Tair = Tair, E = E, VPD = VPD)
+D_leaf = plantecophys::VPDairToLeaf(VPD = VPD, Tleaf = Tleaf, Tair = Tair)
 g_w = calc_gw(E = E, D_leaf = D_leaf)
-A = calc_A(T_air = T_air, E = E, RH = RH)
+A = calc_A(Tair = Tair, E = E, VPD =VPD)
 
-plot(P, T_leaf, type = "l", col = "black", xlab = "Leaf water potential (-MPa)",
+plot(P, Tleaf, type = "l", col = "black", xlab = "Leaf water potential (-MPa)",
      ylab = expression("T"[leaf]*" (\u00B0C)"))
 plot(P, D_leaf, type = "l", col = "blue", xlab = "Leaf water potential (-MPa)",
      ylab = expression("D"[leaf]*" (kPa)"))
@@ -90,14 +90,14 @@ As mentioned, we also consider the cost of thermal damage to the leaf. To do so,
 The parameters required are T~50~ (i.e. the temperature halfway between the critical temperature T~crit~ and the temperature at which the maximum F~0~ is first recorded), the minimum and maximum values of F~0~, and a scaling parameter r.
 
 ```{r thermal damage}
-T_leaf_for_F0vT = seq(30, 54, length.out = 400)
-Tcrit = 50
+Tleaf_for_F0vT = seq(30, 54, length.out = 400)
+Tcrit = 48
 T50 = 51
 F0_min = 500
 F0_max = 1000
 
-F0_for_F0vT = F0_func(T_leaf_for_F0vT, Tcrit, T50, F0_max, F0_min)
-plot(T_leaf_for_F0vT, F0_for_F0vT, type = 'l',
+F0_for_F0vT = F0_func(Tleaf_for_F0vT, Tcrit, T50, F0_max, F0_min)
+plot(Tleaf_for_F0vT, F0_for_F0vT, type = 'l',
      ylab = expression("F"[0]), xlab = "Temperature (\u00B0C)")
 ```
 
@@ -108,9 +108,9 @@ We then compute the hydraulic and thermal costs, as well as the carbon gain over
 $$HC = \frac{k_{max} - k(\psi_{leaf})}{k_{max} - k_{crit}},$$ $$TC = \frac{F_{0}(\psi_{leaf}) - F_{0,min}}{F_{0,max} - F_{0,min}},$$ $$CG = \frac{A(\psi_{leaf})}{A_{max}}.$$
 
 ```{r cost-gain}
-hydraulic_cst = hydraulic_cost(P = P, T_air = T_air, kmax_25 = kmax_25)
-thermal_cst = thermal_cost(P = P, T_air = T_air, RH = RH, Tcrit = Tcrit, T50 = T50)
-carbon_gain = C_gain(P = P, T_air = T_air, RH = RH, kmax_25 = kmax_25)
+hydraulic_cst = hydraulic_cost(P = P, Tair = Tair, kmax_25 = kmax_25)
+thermal_cst = thermal_cost(P = P, Tair = Tair, VPD = VPD, Tcrit = Tcrit, T50 = T50)
+carbon_gain = C_gain(P = P, Tair = Tair, VPD = VPD, kmax_25 = kmax_25)
 
 {plot(P, hydraulic_cst, type = 'l', col = 'blue', 
       ylab = "HC, TC, CG", xlab = "Leaf water potential (-MPa)", xlim = c(0, Pcrit))
@@ -152,7 +152,7 @@ temp_rangeK = temp_range+273
 
 viscosity = 1.95e14/temp_rangeK**7
 fluidity = 1/viscosity
-kmax_pl = calc_kmax(kmax_25 = 4, T_air = temp_range)
+kmax_pl = calc_kmax(kmax_25 = 4, Tair = temp_range)
 
 plot(temp_range, viscosity, type = 'l', xlab = "Temperature (\u00B0C)",
      ylab = "Viscosity (Pa s)")

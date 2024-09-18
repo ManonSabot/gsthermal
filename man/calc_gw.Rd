@@ -32,7 +32,7 @@ Pcrit = calc_Pcrit(b, c) # Calculate Pcrit based on Weibull curve
 P = Ps_to_Pcrit(Pcrit = Pcrit) # Create Ps to Pcrit vector
 trans = trans_from_vc(P = P, b = b, c = c) # Create vector of transpiration supply stream
 Tleaves = calc_Tleaf(E = trans) # Get leaf temperatures
-Dleaves = calc_Dleaf(T_leaf = Tleaves) # Get leaf VPD
+Dleaves = plantecophys::VPDairToLeaf(Tleaf = Tleaves, Tair = 25, VPD = 1.5) # Get leaf VPD
 
 calc_gw(E = trans, D_leaf = Dleaves)
 }

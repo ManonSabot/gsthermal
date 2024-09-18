@@ -4,10 +4,10 @@
 \alias{calc_Rnet}
 \title{Calculate net radiation}
 \usage{
-calc_Rnet(T_air = 25, PPFD = 1000, VPD = 1.5, albedo = 0.15, epsilon = 0.97)
+calc_Rnet(Tair = 25, PPFD = 1000, VPD = 1.5, albedo = 0.15, epsilon = 0.97)
 }
 \arguments{
-\item{T_air}{Air temperature, deg C}
+\item{Tair}{Air temperature, deg C}
 
 \item{PPFD}{Photosynthetic photon flux density, mu mol m-2 s-1}
 
