@@ -35,9 +35,16 @@ hydraulic_cost = function(P,
                           constant_kmax = FALSE
 )
 {
+  # Adjust kmax based on the temperature response of viscosity
   kmax = calc_kmax(kmax_25, Tair, constant_kmax)
+
+  # Calculate conductivity at Pcrit
   kcrit = ratiocrit*kmax
+
+  # Calculate conductivity over the range of possible water potentials
   k = kmax * vulnerability_curve(P, b, c)
+
+  # Calculate the hydraulic cost
   kmax_i = max(k)
   cost = (kmax_i - k) / (kmax_i - kcrit)
   return(cost)
@@ -80,10 +87,14 @@ respiratory_cost = function(P,
                             Rd0 = 0.92,
                             TrefR = 25)
 {
+  # Calculate respiration over the transpiration supply stream
   E = trans_from_vc(P, kmax_25, Tair, b, c, constant_kmax)
   Rd = calc_Rd(Tair, VPD, PPFD, E, Wind, Patm, Wleaf, LeafAbs, Rd0, TrefR)
+
+  # Find the minimum value of Rd
   Rd_min = min(Rd)
 
+  # Calculate the respiratory cost
   if (is.null(Amax)) {
     Rd_max = max(Rd)
     cost = (Rd - Rd_min) / (Rd_max - Rd_min)
@@ -136,12 +147,13 @@ thermal_cost = function(P,
                         constant_kmax = FALSE
                         )
 {
+  # Calculate Tleaf over the transpiration supply stream
   E = trans_from_vc(P, kmax_25, Tair, b, c, constant_kmax)
   Tleaf = calc_Tleaf(Tair = Tair, VPD = VPD, PPFD = PPFD, E = E, Wind = Wind,
                       Patm = Patm, Wleaf = Wleaf, LeafAbs = LeafAbs)
 
+  # Calculate thermal cost
   r = 2 / (T50 - Tcrit)
-
   cost = 1 / (1 + exp(-r * (Tleaf - T50)))
   return(cost)
 }
@@ -267,7 +279,7 @@ C_gain = function(P,
   # Calculate Amax if not provided
   #Amax = ifelse(is.null(Amax), abs(max(A)), Amax)
   Amax = if (is.null(Amax) & !(all(A <= 0))){
-    max(A)
+    max(abs(A))
   } else if (is.null(Amax) & (all(A <= 0))) {
     max(abs(A))
   } else {

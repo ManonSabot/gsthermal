@@ -20,6 +20,10 @@ calc_A(
   Rd0 = 0.92,
   TrefR = 25,
   netOrig = TRUE,
+  g1 = 2.9,
+  g0 = 0.003,
+  g_w = NULL,
+  Tleaf = NULL,
   ...
 )
 }
@@ -55,6 +59,14 @@ is gross photosynthesis}
 
 \item{netOrig}{TRUE if net photosynthesis is to be calculated within
 \code{plantecophys::Photosyn}. FALSE if Anet is to be calculated as Agross - Rd.}
+
+\item{g1}{Parameter of Ball-Berry type stomatal conductance models.}
+
+\item{g0}{Parameter of Ball-Berry type stomatal conductance models.}
+
+\item{g_w}{Stomatal conductance to water vapor (mol m-2 s-1)}
+
+\item{Tleaf}{Leaf temperature (deg C)}
 
 \item{\dots}{Further parameters passed to \code{plantecophys::Photosyn}.}
 }

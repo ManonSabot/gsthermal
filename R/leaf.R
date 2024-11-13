@@ -2,11 +2,14 @@
 calc_Tleaf_fn = function (
     Tair = 25,
     E = 0.2,
+    VPD = 1.5,
+    PPFD = 1000,
     ...
 )
 {
   Tleaf <- try(uniroot(leaf_energy_balance,
                        interval = c(Tair - 30, Tair + 30), E = E, Tair = Tair,
+                       VPD = VPD, PPFD = PPFD,
                        ...)$root)
   return(Tleaf)
 }
@@ -231,6 +234,10 @@ calc_gw = function(
 #' @param TrefR Reference temperature for Rd (deg C)
 #' @param netOrig TRUE if net photosynthesis is to be calculated within
 #'     \code{plantecophys::Photosyn}. FALSE if Anet is to be calculated as Agross - Rd.
+#' @param g1 Parameter of Ball-Berry type stomatal conductance models.
+#' @param g0 Parameter of Ball-Berry type stomatal conductance models.
+#' @param g_w Stomatal conductance to water vapor (mol m-2 s-1)
+#' @param Tleaf Leaf temperature (deg C)
 #' @param \dots Further parameters passed to \code{plantecophys::Photosyn}.
 #'
 #' @return Photosynthetic rate (mol m-2 s-1)
@@ -265,18 +272,25 @@ calc_A = function(Tair = 25,
                   Rd0 = 0.92,
                   TrefR = 25,
                   netOrig = TRUE,
+                  g1 = 2.9,
+                  g0 = 0.003,
+                  g_w = NULL,
+                  Tleaf = NULL,
                   ...
 )
 {
-  Tleaf = calc_Tleaf(Tair = Tair, VPD = VPD, PPFD = PPFD, E = E, Wind = Wind,
-                      Patm = Patm, Wleaf = Wleaf, LeafAbs = LeafAbs)
-  D_leaf = plantecophys::VPDairToLeaf(VPD = VPD, Tair = Tair, Tleaf = Tleaf)
-  g_w = calc_gw(E, D_leaf, Patm)
+  if(is.null(g_w) & is.null(Tleaf)) {
+    Tleaf = calc_Tleaf(Tair = Tair, VPD = VPD, PPFD = PPFD, E = E, Wind = Wind,
+                       Patm = Patm, Wleaf = Wleaf, LeafAbs = LeafAbs)
+    D_leaf = plantecophys::VPDairToLeaf(VPD = VPD, Tair = Tair, Tleaf = Tleaf)
+    g_w = calc_gw(E, D_leaf, Patm)
+  }
 
   if (net == FALSE){
   Photosyn_out = mapply(plantecophys::Photosyn,
                         VPD = VPD, Ca = Ca, PPFD = PPFD, Tleaf = Tleaf,
                         Patm = Patm, GS = g_w, Rd0 = 0, Jmax = Jmax, Vcmax = Vcmax,
+                        g1 = g1, g0 = g0,
                         ...)
   A = as.numeric(Photosyn_out[2,])
    } else {
@@ -286,12 +300,14 @@ calc_A = function(Tair = 25,
       Photosyn_out = mapply(plantecophys::Photosyn,
                             VPD = VPD, Ca = Ca, PPFD = PPFD, Tleaf = Tleaf,
                             Patm = Patm, GS = g_w, Rd = Rd, Jmax = Jmax, Vcmax = Vcmax,
+                            g1 = g1, g0 = g0,
                             ...)
       A = as.numeric(Photosyn_out[2,])
       } else {
       Photosyn_out = mapply(plantecophys::Photosyn,
                             VPD = VPD, Ca = Ca, PPFD = PPFD, Tleaf = Tleaf,
                             Patm = Patm, GS = g_w, Rd0 = 0, Jmax = Jmax, Vcmax = Vcmax,
+                            g1 = g1, g0 = g0,
                             ...)
       A = as.numeric(Photosyn_out[2,]) - Rd
     }
