@@ -70,7 +70,7 @@ From $T_{leaf}$, we calculate $D_{leaf} = e_{sat}(T_{leaf}) - e_{sat}(T_{air}) -
 ```{r physio}
 Tleaf = calc_Tleaf(Tair = Tair, E = E, VPD = VPD)
 D_leaf = plantecophys::VPDairToLeaf(VPD = VPD, Tleaf = Tleaf, Tair = Tair)
-g_w = calc_gw(E = E, D_leaf = D_leaf)
+g_w = calc_gw(E = E, Tleaf = Tleaf, Tair = Tair, VPD = VPD)
 A = calc_A(Tair = Tair, E = E, VPD =VPD)
 
 plot(P, Tleaf, type = "l", col = "black", xlab = "Leaf water potential (-MPa)",

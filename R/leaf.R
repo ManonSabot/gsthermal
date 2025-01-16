@@ -186,9 +186,8 @@ leaf_energy_balance = function(
 
 #' Stomatal conductance
 #'
-#' @param E Transpiration rate, mmol m-2 s-1
-#' @param D_leaf Leaf VPD, kPa
-#' @param Patm Atmospheric pressure, kPa
+#' @inheritParams calc_Tleaf
+#' @param Tleaf Leaf temperature, deg C
 #'
 #' @return Stomatal conductance to water vapor, mol m-2 s-1
 #' @export
@@ -208,14 +207,54 @@ leaf_energy_balance = function(
 #' Tleaves = calc_Tleaf(E = trans) # Get leaf temperatures
 #' Dleaves = plantecophys::VPDairToLeaf(Tleaf = Tleaves, Tair = 25, VPD = 1.5) # Get leaf VPD
 #'
-#' calc_gw(E = trans, D_leaf = Dleaves)
-calc_gw = function(
+#' calc_gw(E = trans, Tleaf = Tleaves)
+calc_gw = function (
     E,
-    D_leaf = 1.5,
-    Patm = 101.325
-)
-{
-  g_w = Patm * E * 1e-3 / D_leaf
+    Tleaf = 25,
+    Patm = 101.325,
+    Tair = 25,
+    VPD = 1.5,
+    PPFD = 1000,
+    Wind = 8,
+    Wleaf = 0.01) {
+
+  # Constants
+  H2OLV0 <- 2.501e6         # J kg-1
+  H2OMW <- 18e-3            # J kg-1
+  CPAIR <- 1010             # J kg-1 K-1
+  AIRMA <- 0.029            # mol mass air (kg/mol)
+  UMOLPERJ <- 4.57
+  DHEAT <- 2.15e-05         # molecular diffusivity for heat
+
+  # Convert temperature to Kelvin
+  Tair_k <- Tair + 273.15
+
+  # Latent heat of water vapour at air temperature (J mol-1)
+  LHV <- (H2OLV0 - 2.365E3 * Tair) * H2OMW
+
+  # Psychrometric constant
+  GAMMA <- CPAIR * AIRMA * Patm * 1000/LHV
+
+  # Const s in Penman-Monteith equation  (Pa K-1)
+  SLOPE <- (plantecophys::esat(Tair + 0.1) - plantecophys::esat(Tair))/0.1
+
+  # See Leuning et al (1995) PC&E 18:1183-1200 Appendix E
+  # Boundary layer conductance for heat - single sided, forced convection
+  CMOLAR <- Patm * 1000/(8.314 * Tair_k)
+  Gbhforced <- 0.003 * sqrt(Wind/Wleaf) * CMOLAR
+
+  # Free convection
+  GRASHOF <- 1.6e+08 * abs(Tleaf - Tair) * (Wleaf^3) # Grashof number
+  Gbhfree <- 0.5 * DHEAT * (GRASHOF^0.25)/Wleaf * CMOLAR
+
+  # Total conductance to heat (both leaf sides)
+  Gbh <- 2 * (Gbhfree + Gbhforced)
+
+  # Rnet
+  Rsol <- 2 * PPFD/UMOLPERJ # W m-2
+
+  # Penman-Monteith equation
+  g_w = GAMMA * Gbh * 1/((SLOPE * Rsol + VPD*1000 * Gbh * CPAIR * AIRMA)/(LHV * E/1000) - SLOPE)
   return(g_w)
 }
 
@@ -282,8 +321,7 @@ calc_A = function(Tair = 25,
   if(is.null(g_w) & is.null(Tleaf)) {
     Tleaf = calc_Tleaf(Tair = Tair, VPD = VPD, PPFD = PPFD, E = E, Wind = Wind,
                        Patm = Patm, Wleaf = Wleaf, LeafAbs = LeafAbs)
-    D_leaf = plantecophys::VPDairToLeaf(VPD = VPD, Tair = Tair, Tleaf = Tleaf)
-    g_w = calc_gw(E, D_leaf, Patm)
+    g_w = calc_gw(E, Tleaf, Patm, Tair, VPD, PPFD, Wind, Wleaf)
   }
 
   if (net == FALSE){
@@ -294,16 +332,16 @@ calc_A = function(Tair = 25,
                         ...)
   A = as.numeric(Photosyn_out[2,])
    } else {
-    Rd = Rd0 * exp(0.1012 * (Tleaf - TrefR) - 0.0005 * (Tleaf**2 - TrefR**2))
-
     if (isTRUE(netOrig)) {
       Photosyn_out = mapply(plantecophys::Photosyn,
                             VPD = VPD, Ca = Ca, PPFD = PPFD, Tleaf = Tleaf,
-                            Patm = Patm, GS = g_w, Rd = Rd, Jmax = Jmax, Vcmax = Vcmax,
+                            Patm = Patm, GS = g_w, #Rd = Rd,
+                            Jmax = Jmax, Vcmax = Vcmax,
                             g1 = g1, g0 = g0,
                             ...)
       A = as.numeric(Photosyn_out[2,])
-      } else {
+    } else {
+      Rd = Rd0 * exp(0.1012 * (Tleaf - TrefR) - 0.0005 * (Tleaf**2 - TrefR**2))
       Photosyn_out = mapply(plantecophys::Photosyn,
                             VPD = VPD, Ca = Ca, PPFD = PPFD, Tleaf = Tleaf,
                             Patm = Patm, GS = g_w, Rd0 = 0, Jmax = Jmax, Vcmax = Vcmax,
@@ -311,7 +349,7 @@ calc_A = function(Tair = 25,
                             ...)
       A = as.numeric(Photosyn_out[2,]) - Rd
     }
-  }
+   }
   return(A)
 }
 

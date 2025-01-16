@@ -4,14 +4,33 @@
 \alias{calc_gw}
 \title{Stomatal conductance}
 \usage{
-calc_gw(E, D_leaf = 1.5, Patm = 101.325)
+calc_gw(
+  E,
+  Tleaf = 25,
+  Patm = 101.325,
+  Tair = 25,
+  VPD = 1.5,
+  PPFD = 1000,
+  Wind = 8,
+  Wleaf = 0.01
+)
 }
 \arguments{
 \item{E}{Transpiration rate, mmol m-2 s-1}
 
-\item{D_leaf}{Leaf VPD, kPa}
+\item{Tleaf}{Leaf temperature, deg C}
 
 \item{Patm}{Atmospheric pressure, kPa}
+
+\item{Tair}{Air temperature, deg C}
+
+\item{VPD}{Air vapor pressure deficit, kPa}
+
+\item{PPFD}{Photosynthetic photon flux density, mu mol m-2 s-1}
+
+\item{Wind}{Wind speed above the leaf boundary layer, m s-1}
+
+\item{Wleaf}{Leaf width, m}
 }
 \value{
 Stomatal conductance to water vapor, mol m-2 s-1
@@ -34,5 +53,5 @@ trans = trans_from_vc(P = P, b = b, c = c) # Create vector of transpiration supp
 Tleaves = calc_Tleaf(E = trans) # Get leaf temperatures
 Dleaves = plantecophys::VPDairToLeaf(Tleaf = Tleaves, Tair = 25, VPD = 1.5) # Get leaf VPD
 
-calc_gw(E = trans, D_leaf = Dleaves)
+calc_gw(E = trans, Tleaf = Tleaves)
 }
