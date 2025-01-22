@@ -335,7 +335,7 @@ calc_A = function(Tair = 25,
     if (isTRUE(netOrig)) {
       Photosyn_out = mapply(plantecophys::Photosyn,
                             VPD = VPD, Ca = Ca, PPFD = PPFD, Tleaf = Tleaf,
-                            Patm = Patm, GS = g_w, #Rd = Rd,
+                            Patm = Patm, GS = g_w,
                             Jmax = Jmax, Vcmax = Vcmax,
                             g1 = g1, g0 = g0,
                             ...)
@@ -344,7 +344,7 @@ calc_A = function(Tair = 25,
       Rd = Rd0 * exp(0.1012 * (Tleaf - TrefR) - 0.0005 * (Tleaf**2 - TrefR**2))
       Photosyn_out = mapply(plantecophys::Photosyn,
                             VPD = VPD, Ca = Ca, PPFD = PPFD, Tleaf = Tleaf,
-                            Patm = Patm, GS = g_w, Rd0 = 0, Jmax = Jmax, Vcmax = Vcmax,
+                            Patm = Patm, GS = g_w, Rd = 0, Jmax = Jmax, Vcmax = Vcmax,
                             g1 = g1, g0 = g0,
                             ...)
       A = as.numeric(Photosyn_out[2,]) - Rd
