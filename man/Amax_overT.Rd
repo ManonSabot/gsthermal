@@ -13,7 +13,7 @@ Amax_overT(
   PPFD = 1000,
   Patm = 101.325,
   Wind = 2,
-  Wleaf = 0.01,
+  Wleaf = 0.025,
   LeafAbs = 0.5,
   Ca = 420,
   Jmax = 100,

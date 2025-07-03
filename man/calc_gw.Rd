@@ -12,7 +12,7 @@ calc_gw(
   VPD = 1.5,
   PPFD = 1000,
   Wind = 8,
-  Wleaf = 0.01
+  Wleaf = 0.025
 )
 }
 \arguments{

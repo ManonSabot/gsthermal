@@ -4,7 +4,7 @@
 \alias{calc_gHa}
 \title{Boundary layer conductance to forced convection}
 \usage{
-calc_gHa(Tair = 25, Wind = 2, Patm = 101.325, Wleaf = 0.01)
+calc_gHa(Tair = 25, Wind = 2, Patm = 101.325, Wleaf = 0.025)
 }
 \arguments{
 \item{Tair}{Air temperature, deg C}

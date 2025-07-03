@@ -11,7 +11,7 @@ calc_Rd(
   E = 2,
   Wind = 2,
   Patm = 101.325,
-  Wleaf = 0.01,
+  Wleaf = 0.025,
   LeafAbs = 0.5,
   Rd0 = 0.92,
   TrefR = 25

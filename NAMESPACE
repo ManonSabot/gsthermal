@@ -2,8 +2,10 @@
 
 export(Amax_overT)
 export(C_gain)
+export(C_gain_alt)
 export(F0_func)
 export(Ps_to_Pcrit)
+export(TJmax_updated)
 export(calc_A)
 export(calc_Pcrit)
 export(calc_Rd)

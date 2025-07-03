@@ -17,16 +17,22 @@ calc_costgain(
   PPFD = 1000,
   Patm = 101.325,
   Wind = 2,
-  Wleaf = 0.01,
+  Wleaf = 0.025,
   LeafAbs = 0.5,
   Tcrit = 50,
   T50 = 51,
   Ca = 420,
-  Jmax = 100,
-  Vcmax = 50,
-  constant_kmax = FALSE,
   Rd0 = 0.92,
   TrefR = 25,
+  Vcmax = 34,
+  EaV = 62307,
+  EdVC = 2e+05,
+  delsC = 639,
+  Jmax = 60,
+  EaJ = 33115,
+  EdVJ = 2e+05,
+  delsJ = 635,
+  constr_Ci = FALSE,
   ...
 )
 }
@@ -71,16 +77,19 @@ is considered irreversible}
 
 \item{Ca}{Atmospheric CO2 concentration (ppm)}
 
-\item{Jmax}{Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)}
-
-\item{Vcmax}{Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)}
-
-\item{constant_kmax}{TRUE if the kmax does not vary with temperature for
-simulations; else FALSE}
-
 \item{Rd0}{Day respiration rate at reference temperature (TrefR). Must be a positive value.}
 
 \item{TrefR}{Reference temperature for Rd (deg C)}
+
+\item{Vcmax}{Maximum carboxylation rate at 25 deg C (mu mol m-2 s-1)}
+
+\item{EaV, EdVC, delsC}{Vcmax temperature response parameters}
+
+\item{Jmax}{Maximum rate of electron transport at 25 deg C (mu mol m-2 s-1)}
+
+\item{EaJ, EdVJ, delsJ}{Jmax temperature response parameters}
+
+\item{constr_Ci}{If TRUE, constrains Ci between 0 and Ca.}
 
 \item{...}{Further parameters passed to \code{plantecophys::Photosyn}.}
 }
@@ -91,14 +100,4 @@ A data frame with columns "P", "ID" and "cost_gain", where "P" denotes
 }
 \description{
 Calculate the carbon gain, hydraulic cost, and thermal costs.
-}
-\examples{
-# Calculate leaf VPD along transpiration supply stream
-Weibull = fit_Weibull() # Fit Weibull parameters
-b = Weibull[1,1]
-c = Weibull[1,2]
-Pcrit = calc_Pcrit(b, c) # Calculate Pcrit based on Weibull curve
-P = Ps_to_Pcrit(Pcrit = Pcrit) # Create Ps to Pcrit vector
-
-calc_costgain(P, b, c)
 }

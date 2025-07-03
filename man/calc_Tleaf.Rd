@@ -11,7 +11,7 @@ calc_Tleaf(
   PPFD = 1000,
   Wind = 2,
   Patm = 101.325,
-  Wleaf = 0.01,
+  Wleaf = 0.025,
   LeafAbs = 0.5
 )
 }

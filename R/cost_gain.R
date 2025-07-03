@@ -81,7 +81,7 @@ respiratory_cost = function(P,
                             PPFD = 1000,
                             Patm = 101.325,
                             Wind = 2,
-                            Wleaf = 0.01,
+                            Wleaf = 0.025,
                             LeafAbs = 0.5,
                             constant_kmax = FALSE,
                             Rd0 = 0.92,
@@ -140,7 +140,7 @@ thermal_cost = function(P,
                         PPFD = 1000,
                         Patm = 101.325,
                         Wind = 2,
-                        Wleaf = 0.01,
+                        Wleaf = 0.025,
                         LeafAbs = 0.5,
                         Tcrit = 50,
                         T50  = 51,
@@ -189,7 +189,7 @@ Amax_overT = function(P,
                       PPFD = 1000,
                       Patm = 101.325,
                       Wind = 2,
-                      Wleaf = 0.01,
+                      Wleaf = 0.025,
                       LeafAbs = 0.5,
                       Ca = 420,
                       Jmax = 100,
@@ -252,13 +252,13 @@ C_gain = function(P,
                   b = -2.5,
                   c = 2,
                   Amax = NULL,
-                  kmax_25 = 4,
+                  kmax_25 = 0.5,
                   Tair = 25,
                   VPD = 1.5,
                   PPFD = 1000,
                   Patm = 101.325,
                   Wind = 2,
-                  Wleaf = 0.01,
+                  Wleaf = 0.025,
                   LeafAbs = 0.5,
                   Ca = 420,
                   Jmax = 100,
@@ -271,24 +271,112 @@ C_gain = function(P,
                   ...
                   )
 {
-  # Calculate the photosynthesis over the transpiration supply stream
   E = trans_from_vc(P, kmax_25, Tair, b, c, constant_kmax)
-  A = calc_A(Tair, VPD, PPFD, Patm, E, Wind, Wleaf, LeafAbs, Ca, Jmax, Vcmax,
-             net, Rd0, TrefR, netOrig,...)
-
-  # Calculate Amax if not provided
-  #Amax = ifelse(is.null(Amax), abs(max(A)), Amax)
-  Amax = if (is.null(Amax) & !(all(A <= 0))){
-    max(abs(A))
-  } else if (is.null(Amax) & (all(A <= 0))) {
-    max(abs(A))
+  A = calc_A(Tair, VPD, PPFD, Patm, E, Wind, Wleaf, LeafAbs,
+             Ca, Jmax, Vcmax, net, Rd0, TrefR, netOrig, ...)
+  E = ifelse(E == 0, NA, E)
+  A = ifelse(E == 0, NA, A)
+  Amax = if (is.null(Amax)) {
+    max(abs(A[!is.na(A)]))
   } else {
     Amax
   }
 
-  gain = A/Amax
+  gain =
+    if (!is.na(Amax) & Amax != 0) {
+      A/Amax
+    } else {
+      rep(0, length = length(A))
+    }
   return(gain)
 }
+
+#' Carbon gain
+#' @description Calculates the normalized carbon gain with constrained Ci
+#'
+#' @inheritParams C_gain
+#'
+#' @return Normalized carbon gain
+#' @export
+C_gain_alt = function (P,
+                       b = -2.5,
+                       c = 2,
+                       Amax = NULL,
+                       kmax_25 = 4,
+                       Tair = 25,
+                       VPD = 1.5,
+                       PPFD = 1000,
+                       Patm = 101.325,
+                       Wind = 2,
+                       Wleaf = 0.01,
+                       LeafAbs = 0.5,
+                       Ca = 420,
+                       Jmax = 100,
+                       Vcmax = 50,
+                       constant_kmax = FALSE,
+                       Rd0 = 0.92,
+                       TrefR = 25,
+                       net = TRUE,
+                       ...)
+{
+  # Calculate transpiration supply stream
+  E = trans_from_vc(P, kmax_25, Tair, b, c, constant_kmax)
+
+  # Create 2D array of possible Ci's for each value of E
+  Cis = array(seq(1, Ca, length.out = 500), dim = c(500, length(E)))
+
+  # Get leaf temperature and stomatal conductance for each value of E
+  Tleaf = calc_Tleaf(Tair = Tair, VPD = VPD, PPFD = PPFD,
+                     E = E, Wind = Wind, Patm = Patm, Wleaf = Wleaf,
+                     LeafAbs = LeafAbs)
+  g_w = calc_gw(E, Tleaf, Patm, Tair, VPD, PPFD, Wind,
+                Wleaf)
+
+  # Calculate supply A from Fick's law
+  g_ws = t(array(g_w, dim = c(500, length(E))))
+  A_supply = g_ws/1.6 * (Ca - Cis)
+
+  Es = t(array(E, dim = c(500, length(E))))
+
+  # Calculate demand A with Farqhuar model
+  Tleaves = t(array(Tleaf, dim = c(500, length(E))))
+  Photosyn_out = mapply(plantecophys::Photosyn, VPD = VPD,
+                        Ca = Ca, PPFD = PPFD, Tleaf = Tleaves,
+                        Patm = Patm,
+                        Ci = Cis, Jmax = Jmax, Vcmax = Vcmax,
+                        Rd0 = Rd0, TrefR = TrefR, new_JT = FALSE,
+                        ...)
+
+  if (isTRUE(net)) {
+    A_demand = as.numeric(Photosyn_out[2,])
+  } else {
+    Anet = as.numeric(Photosyn_out)[2,]
+    Rd = as.numeric(Photosyn_out)[8,]
+    A_demand = Anet + Rd
+  }
+  dim(A_demand) = c(500, 500)
+
+  # Find which values of supply and demand A match closest for each value of E
+  idx = apply(abs(A_supply - A_demand), 2, FUN = which.min)
+
+  # Select the corresponding values of Ci and A
+  Ci = sapply(1:length(E), function(e) {Cis[idx[e], e]})
+  A_P = sapply(1:length(E), function(e) {A_demand[idx[e], e]})
+
+  # Calculate Amax
+  Amax = if (is.null(Amax) & !(all(A_P <= 0))) {
+    max(abs(A_P))
+  } else if (is.null(Amax) & (all(A_P <= 0))) {
+    max(abs(A_P))
+  } else {
+    Amax
+  }
+
+  # Normalise A to get CG
+  gain = A_P/Amax
+  return(gain)
+}
+
 
 #' Calculate all costs and gains
 #' @description Calculate the carbon gain, hydraulic cost, and thermal costs.
@@ -302,20 +390,13 @@ C_gain = function(P,
 #' @param Amax_gross Maximum potential gross photosynthetic rate (A) that A values are normalized
 #'     by to obtain the carbon gain. If NULL, this is the instantaneous maximum
 #'     potential rate described by Sperry et al. (2016).
+#' @param EaV,EdVC,delsC Vcmax temperature response parameters
+#' @param EaJ,EdVJ,delsJ Jmax temperature response parameters
+#' @param constr_Ci If TRUE, constrains Ci between 0 and Ca.
 #' @return A data frame with columns "P", "ID" and "cost_gain", where "P" denotes
 #'     the leaf water potential, "ID" is one of CG, HC, or TC, and "cost_gain" is the
 #'     corresponding value.
 #' @export
-#'
-#' @examples
-#' # Calculate leaf VPD along transpiration supply stream
-#' Weibull = fit_Weibull() # Fit Weibull parameters
-#' b = Weibull[1,1]
-#' c = Weibull[1,2]
-#' Pcrit = calc_Pcrit(b, c) # Calculate Pcrit based on Weibull curve
-#' P = Ps_to_Pcrit(Pcrit = Pcrit) # Create Ps to Pcrit vector
-#'
-#' calc_costgain(P, b, c)
 calc_costgain = function(
     P,
     b = -2.5,
@@ -329,35 +410,119 @@ calc_costgain = function(
     PPFD = 1000,
     Patm = 101.325,
     Wind = 2,
-    Wleaf = 0.01,
+    Wleaf = 0.025,
     LeafAbs = 0.5,
     Tcrit = 50,
     T50 = 51,
     Ca = 420,
-    Jmax = 100,
-    Vcmax = 50,
-    constant_kmax = FALSE,
     Rd0 = 0.92,
     TrefR = 25,
+    Vcmax=34,
+    EaV=62307,
+    EdVC=2e5,
+    delsC=639,
+    Jmax = 60,
+    EaJ=33115,
+    EdVJ=2e5,
+    delsJ=635,
+    constr_Ci = FALSE,
     ...
 )
 {
-  HC = hydraulic_cost(P, b, c, kmax_25, Tair, ratiocrit, constant_kmax)
-  TC = thermal_cost(P, b, c, kmax_25, Tair, VPD, PPFD, Patm, Wind, Wleaf,
-                    LeafAbs, Tcrit, T50, constant_kmax)
-  CG_net = C_gain(P, b, c, Amax_net, kmax_25, Tair, VPD, PPFD, Patm, Wind, Wleaf,
-              LeafAbs, Ca, Jmax, Vcmax, constant_kmax, net = TRUE, Rd0, TrefR,
-              netOrig = FALSE, ...)
-  CG_gross = C_gain(P, b, c, Amax_gross, kmax_25, Tair, VPD, PPFD, Patm, Wind,
-                    Wleaf, LeafAbs, Ca, Jmax, Vcmax, constant_kmax, net = FALSE,
-                    Rd0, TrefR, ...)
+  if(is.null(P)) {
+    return(NULL)
+  }
 
-  cost_gain = c(HC, TC, CG_net, CG_gross)
-  ID = c(rep("HC", length(HC)),
-         rep("TC", length(TC)),
-         rep("CG_net", length(CG_net)),
-         rep("CG_gross", length(CG_gross)))
-  df = data.frame(P, ID, cost_gain)
+  # Hydraulic costs
+  HC_constkmax = hydraulic_cost(P, b, c, kmax_25, Tair, constant_kmax = TRUE)
+  HC_varkmax = hydraulic_cost(P, b, c, kmax_25, Tair, constant_kmax = FALSE)
+
+  # Thermal cost
+  TC = thermal_cost(P, b, c, kmax_25, Tair, VPD, PPFD, Patm,
+                    Wind, Wleaf, LeafAbs, Tcrit, T50, constant_kmax = FALSE)
+
+  # Carbon gains
+  if(isFALSE(constr_Ci)) {
+    CG_gross_constkmax = C_gain(
+      P, b, c, kmax_25 = kmax_25,
+      Wind = Wind, Wleaf = Wleaf, LeafAbs = LeafAbs,
+      Tair = Tair, PPFD = PPFD,
+      VPD = VPD, Tcrit = Tcrit, T50 = T50,
+      Vcmax=Vcmax,EaV=EaV,EdVC=EdVC,delsC=delsC,
+      Jmax = Jmax,EaJ=EaJ,EdVJ=EdVJ,delsJ=delsJ,
+      constant_kmax = TRUE, net = FALSE, new_JT = FALSE,
+      ...)
+    CG_gross_varkmax = C_gain(
+      P, b, c, kmax_25 = kmax_25,
+      Wind = Wind, Wleaf = Wleaf, LeafAbs = LeafAbs,
+      Tair = Tair, PPFD = PPFD,
+      VPD = VPD, Tcrit = Tcrit, T50 = T50,
+      Vcmax=Vcmax,EaV=EaV,EdVC=EdVC,delsC=delsC,
+      Jmax = Jmax,EaJ=EaJ,EdVJ=EdVJ,delsJ=delsJ,
+      constant_kmax = FALSE, net = FALSE, new_JT = FALSE,
+      ...)
+    CG_net = C_gain(
+      P, b, c, kmax_25 = kmax_25,
+      Wind = Wind, Wleaf = Wleaf, LeafAbs = LeafAbs,
+      Tair = Tair, PPFD = PPFD,
+      VPD = VPD, Tcrit = Tcrit, T50 = T50,
+      Vcmax=Vcmax,EaV=EaV,EdVC=EdVC,delsC=delsC,
+      Jmax = Jmax,EaJ=EaJ,EdVJ=EdVJ,delsJ=delsJ,
+      constant_kmax = FALSE, net = TRUE, netOrig = TRUE, new_JT = FALSE,
+      ...)
+    CG_net_newJT = C_gain(
+      P, b, c, kmax_25 = kmax_25,
+      Wind = Wind, Wleaf = Wleaf, LeafAbs = LeafAbs,
+      Tair = Tair, PPFD = PPFD,
+      VPD = VPD, Tcrit = Tcrit, T50 = T50,
+      Vcmax=Vcmax,EaV=EaV,EdVC=EdVC,delsC=delsC,
+      Jmax = Jmax,EaJ=EaJ,EdVJ=EdVJ,delsJ=delsJ,
+      constant_kmax = FALSE, net = TRUE, netOrig = TRUE, new_JT = TRUE,
+      ...)
+  } else {
+    CG_gross_constkmax = C_gain_alt(
+      P, b, c, Amax = NULL, kmax_25 = kmax_25,
+      Wind = Wind, Wleaf = Wleaf, LeafAbs = LeafAbs,
+      Tair = Tair, PPFD = PPFD,
+      VPD = VPD, Tcrit = Tcrit, T50 = T50,
+      Vcmax=Vcmax,EaV=EaV,EdVC=EdVC,delsC=delsC,
+      Jmax = Jmax,EaJ=EaJ,EdVJ=EdVJ,delsJ=delsJ,
+      constant_kmax = TRUE, new_JT = FALSE, net = FALSE,
+      ...)
+    CG_gross_varkmax = C_gain_alt(
+      P, b, c, Amax = NULL, kmax_25 = kmax_25,
+      Wind = Wind, Wleaf = Wleaf, LeafAbs = LeafAbs,
+      Tair = Tair, PPFD = PPFD,
+      VPD = VPD, Tcrit = Tcrit, T50 = T50,
+      Vcmax=Vcmax,EaV=EaV,EdVC=EdVC,delsC=delsC,
+      Jmax = Jmax,EaJ=EaJ,EdVJ=EdVJ,delsJ=delsJ,
+      constant_kmax = FALSE, new_JT = FALSE, net = FALSE,
+      ...)
+    CG_net = C_gain_alt(
+      P, b, c, Amax = NULL, kmax_25 = kmax_25,
+      Wind = Wind, Wleaf = Wleaf, LeafAbs = LeafAbs,
+      Tair = Tair, PPFD = PPFD,
+      VPD = VPD, Tcrit = Tcrit, T50 = T50,
+      Vcmax=Vcmax,EaV=EaV,EdVC=EdVC,delsC=delsC,
+      Jmax = Jmax,EaJ=EaJ,EdVJ=EdVJ,delsJ=delsJ,
+      constant_kmax = FALSE, new_JT = FALSE, net = TRUE,
+      ...)
+    CG_net_newJT = C_gain_alt(
+      P, b, c, Amax = NULL, kmax_25 = kmax_25,
+      Wind = Wind, Wleaf = Wleaf, LeafAbs = LeafAbs,
+      Tair = Tair, PPFD = PPFD,
+      VPD = VPD, Tcrit = Tcrit, T50 = T50,
+      Vcmax=Vcmax,EaV=EaV,EdVC=EdVC,delsC=delsC,
+      Jmax = Jmax,EaJ=EaJ,EdVJ=EdVJ,delsJ=delsJ,
+      constant_kmax = FALSE, new_JT = TRUE, net = TRUE,
+      ...)
+  }
+
+  df = data.frame(P,
+                  HC_constkmax, HC_varkmax,
+                  TC,
+                  CG_gross_constkmax, CG_gross_varkmax,
+                  CG_net, CG_net_newJT)
   return(df)
 }
 
@@ -366,6 +531,8 @@ calc_costgain = function(
 #'     hydraulic cost or summed hydraulic and thermal costs.
 #'
 #' @inheritParams calc_costgain
+#' @param constant_kmax TRUE if the kmax does not vary with temperature for
+#'     simulations; else FALSE
 #'
 #' @return A data frame with columns "P", "ID" and "CG_min_C", where "P" denotes
 #'     the leaf water potential, "ID" is either HC or CC, and "CG_min_C" is the
@@ -394,7 +561,7 @@ gain_min_costs = function(
     PPFD = 1000,
     Patm = 101.325,
     Wind = 2,
-    Wleaf = 0.01,
+    Wleaf = 0.025,
     LeafAbs = 0.5,
     Tcrit = 50,
     T50 = 51,
@@ -445,6 +612,8 @@ gain_min_costs = function(
 #' @description Calculates the summed hydraulic and thermal costs.
 #'
 #' @inheritParams calc_costgain
+#' @param constant_kmax TRUE if the kmax does not vary with temperature for
+#'     simulations; else FALSE
 #'
 #' @return A data frame with columns "P", "ID" and "cost", where "P" denotes
 #'     the leaf water potential, "ID" is either HC, TC, or CC, and "cost" is the
@@ -471,7 +640,7 @@ combined_costs = function(
     PPFD = 1000,
     Patm = 101.325,
     Wind = 2,
-    Wleaf = 0.01,
+    Wleaf = 0.025,
     LeafAbs = 0.5,
     Tcrit = 50,
     T50 = 51,

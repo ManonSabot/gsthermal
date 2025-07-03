@@ -54,7 +54,7 @@ calc_Tleaf = function(
     PPFD = 1000,
     Wind = 2,
     Patm = 101.325,
-    Wleaf = 0.01,
+    Wleaf = 0.025,
     LeafAbs = 0.5
 )
 {
@@ -91,7 +91,7 @@ leaf_energy_balance = function(
     PPFD = 1500,
     Patm = 101.325,
     Wind = 2, # m s-1
-    Wleaf = 0.01, # m
+    Wleaf = 0.025, # m
     LeafAbs = 0.5,
     returnwhat = c("balance", "fluxes")
     )
@@ -216,7 +216,7 @@ calc_gw = function (
     VPD = 1.5,
     PPFD = 1000,
     Wind = 8,
-    Wleaf = 0.01) {
+    Wleaf = 0.025) {
 
   # Constants
   H2OLV0 <- 2.501e6         # J kg-1
@@ -302,7 +302,7 @@ calc_A = function(Tair = 25,
                   Patm = 101.325,
                   E = 2,
                   Wind = 2,
-                  Wleaf = 0.01,
+                  Wleaf = 0.025,
                   LeafAbs = 0.5,
                   Ca = 420,
                   Jmax = 100,
@@ -318,40 +318,43 @@ calc_A = function(Tair = 25,
                   ...
 )
 {
-  if(is.null(g_w) & is.null(Tleaf)) {
-    Tleaf = calc_Tleaf(Tair = Tair, VPD = VPD, PPFD = PPFD, E = E, Wind = Wind,
-                       Patm = Patm, Wleaf = Wleaf, LeafAbs = LeafAbs)
-    g_w = calc_gw(E, Tleaf, Patm, Tair, VPD, PPFD, Wind, Wleaf)
+  if (is.null(g_w) & is.null(Tleaf)) {
+    Tleaf = calc_Tleaf(Tair = Tair, VPD = VPD, PPFD = PPFD,
+                       E = E, Wind = Wind, Patm = Patm, Wleaf = Wleaf,
+                       LeafAbs = LeafAbs)
+    g_w = calc_gw(E, Tleaf, Patm, Tair, VPD, PPFD, Wind,
+                  Wleaf)
   }
-
-  if (net == FALSE){
-  Photosyn_out = mapply(plantecophys::Photosyn,
-                        VPD = VPD, Ca = Ca, PPFD = PPFD, Tleaf = Tleaf,
-                        Patm = Patm, GS = g_w, Rd0 = 0, Jmax = Jmax, Vcmax = Vcmax,
-                        g1 = g1, g0 = g0,
-                        ...)
-  A = as.numeric(Photosyn_out[2,])
-   } else {
+  if (net == FALSE) {
+    Photosyn_out = mapply(plantecophys::Photosyn, VPD = VPD,
+                          Ca = Ca, PPFD = PPFD, Tleaf = Tleaf, Patm = Patm,
+                          GS = g_w, Rd = 0, Jmax = Jmax, Vcmax = Vcmax, g1 = g1,
+                          g0 = g0, ...)
+    Anet = as.numeric(Photosyn_out[2, ])
+    Rd = as.numeric(Photosyn_out[8, ])
+    A = Anet + Rd
+  }
+  else {
     if (isTRUE(netOrig)) {
-      Photosyn_out = mapply(plantecophys::Photosyn,
-                            VPD = VPD, Ca = Ca, PPFD = PPFD, Tleaf = Tleaf,
-                            Patm = Patm, GS = g_w,
-                            Jmax = Jmax, Vcmax = Vcmax,
-                            g1 = g1, g0 = g0,
-                            ...)
-      A = as.numeric(Photosyn_out[2,])
-    } else {
-      Rd = Rd0 * exp(0.1012 * (Tleaf - TrefR) - 0.0005 * (Tleaf**2 - TrefR**2))
-      Photosyn_out = mapply(plantecophys::Photosyn,
-                            VPD = VPD, Ca = Ca, PPFD = PPFD, Tleaf = Tleaf,
-                            Patm = Patm, GS = g_w, Rd = 0, Jmax = Jmax, Vcmax = Vcmax,
-                            g1 = g1, g0 = g0,
-                            ...)
-      A = as.numeric(Photosyn_out[2,]) - Rd
+      Photosyn_out = mapply(plantecophys::Photosyn, VPD = VPD,
+                            Ca = Ca, PPFD = PPFD, Tleaf = Tleaf, Patm = Patm,
+                            GS = g_w, Jmax = Jmax, Vcmax = Vcmax, g1 = g1,
+                            g0 = g0, ...)
+      A = as.numeric(Photosyn_out[2, ])
     }
-   }
+    else {
+      Rd = Rd0 * exp(0.1012 * (Tleaf - TrefR) - 5e-04 *
+                       (Tleaf^2 - TrefR^2))
+      Photosyn_out = mapply(plantecophys::Photosyn, VPD = VPD,
+                            Ca = Ca, PPFD = PPFD, Tleaf = Tleaf, Patm = Patm,
+                            GS = g_w, Rd = 0, Jmax = Jmax, Vcmax = Vcmax,
+                            g1 = g1, g0 = g0, ...)
+      A = as.numeric(Photosyn_out[2, ]) - Rd
+    }
+  }
   return(A)
 }
+
 
 #' Radiative conductance
 #'
@@ -391,7 +394,7 @@ calc_gHa = function(
     Tair = 25,
     Wind = 2,
     Patm = 101.325,
-    Wleaf = 0.01
+    Wleaf = 0.025
 )
 {
   # Constants
@@ -450,7 +453,7 @@ calc_Rd = function(Tair = 25,
                    E = 2,
                    Wind = 2,
                    Patm = 101.325,
-                   Wleaf = 0.01,
+                   Wleaf = 0.025,
                    LeafAbs = 0.5,
                    Rd0 = 0.92,
                    TrefR = 25
