@@ -41,7 +41,7 @@ devtools::install_github("CamilleSicangco/gsthermal")
     -   `calc_kmax` calculates the whole-plant conductance at a given temperature.
     -   `vulnerability_curve` calculates the vulnerability curve this vector, and `trans_from_vc` calculates the associated transpiration supply function.
 -   Leaf physiology
-    -   The functions `calc_Tleaf`, `calc_gw`, and `calc_A` solve for leaf temperature, leaf VPD, stomatal conductance to water vapor, and photosynthesis, respectively.
+    -   The functions `calc_Tleaf`, `calc_gw`, and `calc_A` solve for leaf temperature, stomatal conductance to water vapor, and photosynthesis, respectively.
 -   Atmospheric variables
     -   The function `calc_Rnet` calculates net radiation.
 -   Thermal damage
@@ -52,3 +52,6 @@ devtools::install_github("CamilleSicangco/gsthermal")
     -   `C_gain` calculates the normalized carbon gain from photosynthesis, without constraining $C_i$.
     -   `C_gain_alt` calculates the normalized carbon gain from photosynthesis, while constraining $C_i$ between 0 and Ca.
     -   `calc_costgain` calculates the costs and gains described above for a leaf under given environmental conditions.
+
+## Contact
+Camille Sicangco: C.Sicangco@westernsydney.edu.au
