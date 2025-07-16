@@ -42,7 +42,7 @@ devtools::install_github("CamilleSicangco/gsthermal")
     supply function.
 - Leaf physiology
   - The functions `calc_Tleaf`, `calc_gw`, and `calc_A` solve for leaf
-    temperature, leaf VPD, stomatal conductance to water vapor, and
+    temperature, stomatal conductance to water vapor, and
     photosynthesis, respectively.
 - Atmospheric variables
   - The function `calc_Rnet` calculates net radiation.
@@ -60,3 +60,7 @@ devtools::install_github("CamilleSicangco/gsthermal")
     photosynthesis, while constraining $C_i$ between 0 and Ca.
   - `calc_costgain` calculates the costs and gains described above for a
     leaf under given environmental conditions.
+
+## Contact
+
+Camille Sicangco: <C.Sicangco@westernsydney.edu.au>
