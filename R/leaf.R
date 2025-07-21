@@ -1,18 +1,68 @@
 # Non-vectorized function for calculating leaf temperature
-calc_Tleaf_fn = function (
+calc_Tleaf_fn <- function(
     Tair = 25,
     E = 0.2,
     VPD = 1.5,
     PPFD = 1000,
+    ...,
+    initial_width = 30,
+    max_attempts = 50,
+    width_step = 2
+) {
+  fun <- function(Tleaf) leaf_energy_balance(
+    Tleaf = Tleaf,
+    Tair = Tair,
+    E = E,
+    VPD = VPD,
+    PPFD = PPFD,
     ...
-)
-{
-  Tleaf <- try(uniroot(leaf_energy_balance,
-                       interval = c(Tair - 30, Tair + 30), E = E, Tair = Tair,
-                       VPD = VPD, PPFD = PPFD,
-                       ...)$root)
-  return(Tleaf)
+  )
+
+  width <- initial_width
+  attempt <- 1
+  success <- FALSE
+
+  while (attempt <= max_attempts) {
+    lower <- Tair - width
+    upper <- Tair + width
+
+    f.lower <- fun(lower)
+    f.upper <- fun(upper)
+
+    if (!is.finite(f.lower) || !is.finite(f.upper)) {
+      # Shrink interval if function gives NA at either bound
+      width <- width - width_step
+      attempt <- attempt + 1
+      next
+    }
+
+    if (sign(f.lower) != sign(f.upper)) {
+      # Found valid interval
+      success <- TRUE
+      break
+    }
+
+    # Both ends are finite but same sign -> extend the interval
+    width <- width + width_step
+    attempt <- attempt + 1
+  }
+
+  if (!success) {
+    warning("Could not find valid interval after ", max_attempts, " attempts (Tair = ", Tair, ", E = ", E, ")")
+    return(NA)
+  }
+
+  # Now safely apply uniroot
+  result <- try(uniroot(fun, interval = c(lower, upper)), silent = TRUE)
+
+  if (inherits(result, "try-error")) {
+    warning("uniroot failed: ", conditionMessage(attr(result, "condition")))
+    return(NA)
+  } else {
+    return(result$root)
+  }
 }
+
 
 #' Leaf temperature
 #' @description Calculate leaf temperature from energy balance. Adapted from
@@ -111,6 +161,9 @@ leaf_energy_balance = function(
   UMOLPERJ <- 4.57
   DHEAT <- 2.15e-05         # molecular diffusivity for heat
 
+  # Get leaf VPD
+  Dleaf = plantecophys::VPDairToLeaf(Tleaf = Tleaf, Tair = Tair, VPD = VPD)
+
   # Convert temperatures to Kelvin
   Tair_k <- Tair + 273.15
   Tleaf_k <- Tleaf + 273.15
@@ -144,11 +197,10 @@ leaf_energy_balance = function(
   Rsol <- 2 * PPFD/UMOLPERJ # W m-2
 
   # Isothermal net radiation (Leuning et al. 1995, Appendix)
-  ea <- plantecophys::esat(Tair) - 1000 * VPD
+  ea <- plantecophys::esat(Tair) - 1000 * Dleaf
   ema <- 0.642 * (ea/Tair_k)^(1/7)
   Rnetiso <- LeafAbs * Rsol - (1 - ema) * Boltz * Tair_k^4 # isothermal net radiation
 
-  # ?
   GAMMA <- CPAIR * AIRMA * Patm * 1000/LHV
 
   # Convert transpiration to mol m-2 s-1
@@ -207,7 +259,7 @@ leaf_energy_balance = function(
 #' Tleaves = calc_Tleaf(E = trans) # Get leaf temperatures
 #' Dleaves = plantecophys::VPDairToLeaf(Tleaf = Tleaves, Tair = 25, VPD = 1.5) # Get leaf VPD
 #'
-#' calc_gw(E = trans, Tleaf = Tleaves)
+#' calc_gw(E = trans, Tleaf = Tleaves, VPD = Dleaves)
 calc_gw = function (
     E,
     Tleaf = 25,
@@ -253,8 +305,11 @@ calc_gw = function (
   # Rnet
   Rsol <- 2 * PPFD/UMOLPERJ # W m-2
 
+  # Get leaf VPD
+  Dleaf = plantecophys::VPDairToLeaf(Tleaf = Tleaf, Tair = Tair, VPD = VPD)
+
   # Penman-Monteith equation
-  g_w = GAMMA * Gbh * 1/((SLOPE * Rsol + VPD*1000 * Gbh * CPAIR * AIRMA)/(LHV * E/1000) - SLOPE)
+  g_w = GAMMA * Gbh * 1/((SLOPE * Rsol + Dleaf*1000 * Gbh * CPAIR * AIRMA)/(LHV * E/1000) - SLOPE)
   return(g_w)
 }
 
@@ -325,8 +380,12 @@ calc_A = function(Tair = 25,
     g_w = calc_gw(E, Tleaf, Patm, Tair, VPD, PPFD, Wind,
                   Wleaf)
   }
+
+  # Get leaf VPD
+  Dleaf = plantecophys::VPDairToLeaf(Tleaf = Tleaf, Tair = Tair, VPD = VPD)
+
   if (net == FALSE) {
-    Photosyn_out = mapply(plantecophys::Photosyn, VPD = VPD,
+    Photosyn_out = mapply(plantecophys::Photosyn, VPD = Dleaf,
                           Ca = Ca, PPFD = PPFD, Tleaf = Tleaf, Patm = Patm,
                           GS = g_w, Rd = 0, Jmax = Jmax, Vcmax = Vcmax, g1 = g1,
                           g0 = g0, ...)
@@ -336,7 +395,7 @@ calc_A = function(Tair = 25,
   }
   else {
     if (isTRUE(netOrig)) {
-      Photosyn_out = mapply(plantecophys::Photosyn, VPD = VPD,
+      Photosyn_out = mapply(plantecophys::Photosyn, VPD = Dleaf,
                             Ca = Ca, PPFD = PPFD, Tleaf = Tleaf, Patm = Patm,
                             GS = g_w, Jmax = Jmax, Vcmax = Vcmax, g1 = g1,
                             g0 = g0, ...)
@@ -345,7 +404,7 @@ calc_A = function(Tair = 25,
     else {
       Rd = Rd0 * exp(0.1012 * (Tleaf - TrefR) - 5e-04 *
                        (Tleaf^2 - TrefR^2))
-      Photosyn_out = mapply(plantecophys::Photosyn, VPD = VPD,
+      Photosyn_out = mapply(plantecophys::Photosyn, VPD = Dleaf,
                             Ca = Ca, PPFD = PPFD, Tleaf = Tleaf, Patm = Patm,
                             GS = g_w, Rd = 0, Jmax = Jmax, Vcmax = Vcmax,
                             g1 = g1, g0 = g0, ...)

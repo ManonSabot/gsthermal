@@ -6,7 +6,7 @@
 \usage{
 trans_from_vc(
   P,
-  kmax_25 = 4,
+  kmax_25 = 0.5,
   Tair = 25,
   b = -2.5,
   c = 2,

@@ -4,7 +4,7 @@
 \alias{calc_kmax}
 \title{Temperature dependence of conductivity}
 \usage{
-calc_kmax(kmax_25 = 4, Tair = 25, constant_kmax = FALSE)
+calc_kmax(kmax_25 = 0.5, Tair = 25, constant_kmax = FALSE)
 }
 \arguments{
 \item{kmax_25}{Max plant conductance at 25 deg C, mmol s-1 m-2 MPa-1}

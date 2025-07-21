@@ -129,7 +129,7 @@ vulnerability_curve = function(P,
 #'
 #' @return Whole plant conductivity at Tair, mmol s-1 m-2 MPa-1
 #' @export
-calc_kmax = function(kmax_25 = 4,
+calc_kmax = function(kmax_25 = 0.5,
                      Tair = 25,
                      constant_kmax = FALSE
 )
@@ -173,7 +173,7 @@ calc_kmax = function(kmax_25 = 4,
 #' # Create vector of transpiration supply stream
 #' trans = trans_from_vc(P = P, b = b, c = c)
 trans_from_vc = function(P,
-                         kmax_25 = 4,
+                         kmax_25 = 0.5,
                          Tair = 25,
                          b = -2.5,
                          c = 2,

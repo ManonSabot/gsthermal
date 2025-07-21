@@ -214,6 +214,7 @@ C_gain_alt = function (P,
                      LeafAbs = LeafAbs)
   g_w = calc_gw(E, Tleaf, Patm, Tair, VPD, PPFD, Wind,
                 Wleaf)
+  Dleaf = plantecophys::VPDairToLeaf(Tleaf = Tleaf, Tair = Tair, VPD = VPD)
 
   # Calculate supply A from Fick's law
   g_ws = t(array(g_w, dim = c(500, length(E))))
@@ -223,7 +224,8 @@ C_gain_alt = function (P,
 
   # Calculate demand A with Farqhuar model
   Tleaves = t(array(Tleaf, dim = c(500, length(E))))
-  Photosyn_out = mapply(plantecophys::Photosyn, VPD = VPD,
+  Dleaves = t(array(Dleaf, dim = c(500, length(E))))
+  Photosyn_out = mapply(plantecophys::Photosyn, VPD = Dleaves,
                         Ca = Ca, PPFD = PPFD, Tleaf = Tleaves,
                         Patm = Patm,
                         Ci = Cis, Jmax = Jmax, Vcmax = Vcmax,

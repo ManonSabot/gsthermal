@@ -53,5 +53,5 @@ trans = trans_from_vc(P = P, b = b, c = c) # Create vector of transpiration supp
 Tleaves = calc_Tleaf(E = trans) # Get leaf temperatures
 Dleaves = plantecophys::VPDairToLeaf(Tleaf = Tleaves, Tair = 25, VPD = 1.5) # Get leaf VPD
 
-calc_gw(E = trans, Tleaf = Tleaves)
+calc_gw(E = trans, Tleaf = Tleaves, VPD = Dleaves)
 }
