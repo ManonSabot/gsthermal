@@ -309,7 +309,8 @@ calc_gw = function (
   Dleaf = plantecophys::VPDairToLeaf(Tleaf = Tleaf, Tair = Tair, VPD = VPD)
 
   # Penman-Monteith equation
-  g_w = GAMMA * Gbh * 1/((SLOPE * Rsol + VPD*1000 * Gbh * CPAIR * AIRMA)/(LHV * E/1000) - SLOPE)
+  g_w = E*Patm/Dleaf
+  #g_w = GAMMA * Gbh * 1/((SLOPE * Rsol + VPD*1000 * Gbh * CPAIR * AIRMA)/(LHV * E/1000) - SLOPE)
   return(g_w)
 }
 
