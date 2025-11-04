@@ -189,7 +189,8 @@ trans_from_vc = function(P,
 
   # Approximate integral as a trapezoidal sum
   #AUC = mapply(pracma::trapz, P_list, VC_list)
-  AUC = (b / c) * (expint::gammainc(a=1 / c, x=(P[1] / b)^c) - expint::gammainc(a=1 / c, x=(P / b)^c))
+  AUC = (b / c) * (expint::gammainc(a=1 / c, x=(-P / b)^c) - expint::gammainc(a=1 / c, x=(-P[1] / b)^c))
+  print(AUC)
 
   E = kmax*AUC
   return(E)
