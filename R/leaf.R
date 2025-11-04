@@ -394,9 +394,9 @@ calc_A = function(Tair = 25,
                           GS = g_w, Rd = 0, Jmax = Jmax, Vcmax = Vcmax, g1 = g1,
                           g0 = g0, ...)
     Anet = as.numeric(Photosyn_out[2, ])
-    Ci = as.numeric(Photosyn_out[1, ])
+    Ci <- as.numeric(Photosyn_out[1, ])
     Rd = as.numeric(Photosyn_out[8, ])
-    A = Anet + Rd
+    A <- Anet + Rd
   }
   else {
     if (isTRUE(netOrig)) {
@@ -404,7 +404,7 @@ calc_A = function(Tair = 25,
                             Ca = Ca, PPFD = PPFD, Tleaf = Tleaf, Patm = Patm,
                             GS = g_w, Jmax = Jmax, Vcmax = Vcmax, g1 = g1,
                             g0 = g0, ...)
-      A = as.numeric(Photosyn_out[2, ])
+      A <- as.numeric(Photosyn_out[2, ])
     }
     else {
       Rd = Rd0 * exp(0.1012 * (Tleaf - TrefR) - 5e-04 *
@@ -413,7 +413,7 @@ calc_A = function(Tair = 25,
                             Ca = Ca, PPFD = PPFD, Tleaf = Tleaf, Patm = Patm,
                             GS = g_w, Rd = 0, Jmax = Jmax, Vcmax = Vcmax,
                             g1 = g1, g0 = g0, ...)
-      A = as.numeric(Photosyn_out[2, ]) - Rd
+      A <- as.numeric(Photosyn_out[2, ]) - Rd
     }
   }
   out = list(A=A, Ci=Ci)
