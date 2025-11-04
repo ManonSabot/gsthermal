@@ -393,8 +393,8 @@ calc_A = function(Tair = 25,
                           Ca = Ca, PPFD = PPFD, Tleaf = Tleaf, Patm = Patm,
                           GS = g_w, Rd = 0, Jmax = Jmax, Vcmax = Vcmax, g1 = g1,
                           g0 = g0, ...)
-    print(Photosyn_out)
     Anet = as.numeric(Photosyn_out[2, ])
+    Ci = as.numeric(Photosyn_out[1, ])
     Rd = as.numeric(Photosyn_out[8, ])
     A = Anet + Rd
   }
