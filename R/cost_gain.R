@@ -155,8 +155,9 @@ C_gain = function(P,
                   )
 {
   E = trans_from_vc(P, kmax_25, Tair, b, c, constant_kmax)
-  A = calc_A(Tair, VPD, PPFD, Patm, E, Wind, Wleaf, LeafAbs,
+  photo_out <- calc_A(Tair, VPD, PPFD, Patm, E, Wind, Wleaf, LeafAbs,
              Ca, Jmax, Vcmax, net, Rd0, TrefR, netOrig, ...)
+  A = photo_out$A
   E = ifelse(E == 0, NA, E)
   A = ifelse(E == 0, NA, A)
   Amax = if (is.null(Amax)) {

@@ -416,7 +416,8 @@ calc_A = function(Tair = 25,
       A = as.numeric(Photosyn_out[2, ]) - Rd
     }
   }
-  return(A)
+  out = list(A=A, Ci=Ci)
+  return(out)
 }
 
 
