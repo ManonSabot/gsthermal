@@ -185,10 +185,12 @@ trans_from_vc = function(P,
 
   # Create lists of first n water potential and PLC values for all n from 1 to the number of points in P
   P_list = sapply(1:length(P), function(n) P[1:n])
-  VC_list = sapply(1:length(VC), function(n) VC[1:n])
+  #VC_list = sapply(1:length(VC), function(n) VC[1:n])
+  print(P_list)
 
   # Approximate integral as a trapezoidal sum
-  AUC = mapply(pracma::trapz, P_list, VC_list)
+  #AUC = mapply(pracma::trapz, P_list, VC_list)
+  AUC = (b / c) * (expint::gammainc(a=1 / c, (-P_list[1] / b)^c, lower=TRUE) - expint::gammainc(a=1 / c, (-P_list / b)^c, lower=TRUE))
 
   E = kmax*AUC
   return(E)
