@@ -308,14 +308,14 @@ calc_gw = function (
   # Get leaf VPD
   Dleaf = plantecophys::VPDairToLeaf(Tleaf = Tleaf, Tair = Tair, VPD = VPD)
 
-  # diffusive equation
-  #g_w = E / 1000 * Patm / Dleaf
-
-  # Penman-Monteith equation
+  # Penman-Monteith equation with Dleaf (does that make sense?)
   #g_w = GAMMA * Gbh * 1/((SLOPE * Rsol + Dleaf*1000 * Gbh * CPAIR * AIRMA)/(LHV * E/1000) - SLOPE)
 
   # Penman-Monteith equation with Dair
-  g_w = GAMMA * Gbh * 1/((SLOPE * Rsol + VPD*1000 * Gbh * CPAIR * AIRMA)/(LHV * E/1000) - SLOPE)
+  #g_w = GAMMA * Gbh * 1/((SLOPE * Rsol + VPD*1000 * Gbh * CPAIR * AIRMA)/(LHV * E/1000) - SLOPE)
+
+  # diffusive equation
+  g_w = E / 1000 * Patm / Dleaf
 
   return(g_w)
 }
