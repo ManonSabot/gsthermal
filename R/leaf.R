@@ -315,7 +315,7 @@ calc_gw = function (
   #g_w = GAMMA * Gbh * 1/((SLOPE * Rsol + Dleaf*1000 * Gbh * CPAIR * AIRMA)/(LHV * E/1000) - SLOPE)
 
   # Penman-Monteith equation with Dair
-  g_w = GAMMA * Gbh * 1/((SLOPE * Rsol + Dair*1000 * Gbh * CPAIR * AIRMA)/(LHV * E/1000) - SLOPE)
+  g_w = GAMMA * Gbh * 1/((SLOPE * Rsol + VPD*1000 * Gbh * CPAIR * AIRMA)/(LHV * E/1000) - SLOPE)
 
   return(g_w)
 }
