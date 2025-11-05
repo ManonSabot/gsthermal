@@ -183,7 +183,7 @@ trans_from_vc = function(P,
   VC = vulnerability_curve(P, b, c)
   kmax = calc_kmax(kmax_25, Tair, constant_kmax)
 
-  # Alternative approach: approximate as gamma function. Seems faster.
+  # Alternative approach: approximate as gamma function. Seems slightly faster.
   AUC = (b / c) * (expint::gammainc(a=1 / c, x=(-P / b)^c) - expint::gammainc(a=1 / c, x=(-P[1] / b)^c))
 
   # Create lists of first n water potential and PLC values for all n from 1 to the number of points in P
