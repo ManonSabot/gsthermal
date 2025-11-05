@@ -183,15 +183,15 @@ trans_from_vc = function(P,
   VC = vulnerability_curve(P, b, c)
   kmax = calc_kmax(kmax_25, Tair, constant_kmax)
 
+  # Alternative approach: approximate as gamma function. Seems faster.
+  AUC = (b / c) * (expint::gammainc(a=1 / c, x=(-P / b)^c) - expint::gammainc(a=1 / c, x=(-P[1] / b)^c))
+
   # Create lists of first n water potential and PLC values for all n from 1 to the number of points in P
-  P_list = sapply(1:length(P), function(n) P[1:n])
-  VC_list = sapply(1:length(VC), function(n) VC[1:n])
+  #P_list = sapply(1:length(P), function(n) P[1:n])
+  #VC_list = sapply(1:length(VC), function(n) VC[1:n])
 
   # Approximate integral as a trapezoidal sum
-  AUC = mapply(pracma::trapz, P_list, VC_list)
-
-  # approximate as gamma function
-  #AUC = (b / c) * (expint::gammainc(a=1 / c, x=(-P / b)^c) - expint::gammainc(a=1 / c, x=(-P[1] / b)^c))
+  #AUC = mapply(pracma::trapz, P_list, VC_list)
 
   E = kmax*AUC
   return(E)

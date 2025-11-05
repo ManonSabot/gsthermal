@@ -29,7 +29,7 @@ You can install the development version of gsthermal from GitHub with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("CamilleSicangco/gsthermal")
+devtools::install_github("ManonSabot/gsthermal")
 ```
 
 ## Contents
